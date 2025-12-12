@@ -161,6 +161,33 @@ function chomneq_add_sitemap_hint() {
 add_action('wp_head', 'chomneq_add_sitemap_hint', 3);
 
 /**
+ * Google Analytics (GA4)
+ */
+function chomneq_add_google_analytics() {
+    // Não carregar no ambiente de desenvolvimento
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        return;
+    }
+    
+    // Não carregar para usuários logados (opcional, remova se quiser trackear admins)
+    if (is_user_logged_in() && current_user_can('manage_options')) {
+        return;
+    }
+    ?>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2PGD5JSF40"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2PGD5JSF40');
+    </script>
+    <?php
+}
+add_action('wp_head', 'chomneq_add_google_analytics', 1);
+
+/**
  * Otimizações de Performance
  */
 function chomneq_performance_optimizations() {
@@ -4305,10 +4332,153 @@ function chomneq_cleanup_duplicate_themes() {
 add_action('admin_init', 'chomneq_cleanup_duplicate_themes');
 
 /**
- * Limpar cache de atualizações manualmente (útil para debug)
+ * Adicionar botão de verificação manual de atualizações
  */
-function chomneq_clear_theme_update_cache() {
-    delete_site_transient('update_themes');
+function chomneq_add_check_update_button() {
+    $screen = get_current_screen();
+    
+    // Só mostrar na página de temas
+    if ($screen->id !== 'themes') {
+        return;
+    }
+    
+    $theme = wp_get_theme();
+    $theme_slug = $theme->get_stylesheet();
+    ?>
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        // Adicionar botão na página de detalhes do tema
+        var checkUpdateBtn = '<a href="#" class="chomneq-check-update button button-primary" style="margin-left: 10px;">' +
+            '<span class="dashicons dashicons-update" style="margin-top: 3px;"></span> Verificar Atualizações' +
+            '</a>';
+        
+        // Inserir botão ao lado dos botões existentes na lista de temas
+        $('.theme-actions .button, .theme.active .theme-actions .button').first().after(checkUpdateBtn);
+        
+        // Também adicionar dentro da modal de detalhes do tema
+        var checkUpdateBtnModal = '<a href="#" class="chomneq-check-update button button-primary">' +
+            '<span class="dashicons dashicons-update" style="margin-top: 3px;"></span> Verificar Atualizações' +
+            '</a>';
+        
+        // Observar quando a modal abrir
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    // Se a modal foi aberta
+                    var modal = $('.theme-overlay');
+                    if (modal.length && !modal.find('.chomneq-check-update').length) {
+                        // Adicionar botão ao lado de Personalizar/Padrões/Menus
+                        var actionsBar = modal.find('.theme-actions .active-theme');
+                        if (actionsBar.length) {
+                            actionsBar.append(checkUpdateBtnModal);
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Observar mudanças no body (quando modal for adicionada)
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Handler do clique (usar delegação de eventos para pegar ambos os botões)
+        $(document).on('click', '.chomneq-check-update', function(e) {
+            e.preventDefault();
+            var btn = $(this);
+            var originalText = btn.html();
+            
+            // Desabilitar todos os botões de verificação
+            $('.chomneq-check-update').prop('disabled', true);
+            
+            // Mostrar loading em todos os botões
+            $('.chomneq-check-update').html('<span class="dashicons dashicons-update spin" style="margin-top: 3px;"></span> Verificando...');
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'chomneq_force_update_check',
+                    nonce: '<?php echo wp_create_nonce('chomneq_check_update'); ?>'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var successMsg = '<span class="dashicons dashicons-yes" style="margin-top: 3px;"></span> ' + response.data.message;
+                        $('.chomneq-check-update').html(successMsg);
+                        
+                        // Se houver atualização, recarregar página após 2 segundos
+                        if (response.data.has_update) {
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            // Restaurar botão após 3 segundos
+                            setTimeout(function() {
+                                $('.chomneq-check-update').html(originalText).prop('disabled', false);
+                            }, 3000);
+                        }
+                    } else {
+                        $('.chomneq-check-update').html('<span class="dashicons dashicons-warning" style="margin-top: 3px;"></span> Erro ao verificar');
+                        setTimeout(function() {
+                            $('.chomneq-check-update').html(originalText).prop('disabled', false);
+                        }, 3000);
+                    }
+                },
+                error: function() {
+                    $('.chomneq-check-update').html('<span class="dashicons dashicons-warning" style="margin-top: 3px;"></span> Erro de conexão');
+                    setTimeout(function() {
+                        $('.chomneq-check-update').html(originalText).prop('disabled', false);
+                    }, 3000);
+                }
+            });
+        });
+    });
+    </script>
+    <style>
+        .dashicons.spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <?php
 }
-// Descomentar para forçar verificação: add_action('admin_init', 'chomneq_clear_theme_update_cache');
+add_action('admin_footer-themes.php', 'chomneq_add_check_update_button');
+
+/**
+ * Handler AJAX para verificação manual de atualizações
+ */
+function chomneq_ajax_force_update_check() {
+    check_ajax_referer('chomneq_check_update', 'nonce');
+    
+    // Limpar todos os caches relacionados
+    delete_site_transient('update_themes');
+    delete_transient('chomneq_release_info_' . md5('leeoreis/ieq784-wp-theme'));
+    
+    // Forçar nova verificação
+    wp_update_themes();
+    
+    // Verificar se há atualização disponível
+    $update_themes = get_site_transient('update_themes');
+    $theme_slug = wp_get_theme()->get_stylesheet();
+    
+    $has_update = isset($update_themes->response[$theme_slug]);
+    
+    if ($has_update) {
+        $new_version = $update_themes->response[$theme_slug]['new_version'];
+        wp_send_json_success(array(
+            'message' => 'Atualização v' . $new_version . ' disponível!',
+            'has_update' => true
+        ));
+    } else {
+        wp_send_json_success(array(
+            'message' => 'Tema está atualizado',
+            'has_update' => false
+        ));
+    }
+}
+add_action('wp_ajax_chomneq_force_update_check', 'chomneq_ajax_force_update_check');
 
