@@ -52,10 +52,8 @@ $atividades = new WP_Query(array(
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Portal da Região 784 - IEQ Rio de Janeiro</title>
-    <script
-  src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js"
-  type="module"
-></script>
+    <!-- Lottie carregado com defer para não bloquear parsing -->
+    <link rel="modulepreload" href="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js">
     <style>
         * {
             margin: 0;
@@ -750,12 +748,10 @@ $atividades = new WP_Query(array(
     <div class="hero" <?php echo $hero_style; ?>>
         <img src="<?php echo get_template_directory_uri(); ?>/template-parts/logo IEQ.png" alt="Logo IEQ" style="width: 150px; margin: 1rem auto; display: block;" />
         <h1>IEQ Região 784</h1>
-        <dotlottie-wc
-            src="https://lottie.host/a05e1752-91df-4669-b7ff-4d7ae5b0f9a9/DATc0OP9Ed.lottie"
-            style="width: 300px;height: 200px; margin: 0 auto;"
-            autoplay
-            loop
-        ></dotlottie-wc>
+        <!-- Placeholder enquanto Lottie carrega -->
+        <div id="lottie-container" style="width: 300px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+            <div style="color: rgba(255,255,255,0.5); font-size: 2rem;">✨</div>
+        </div>
         <h2>Bem-vindo ao Portal da Região 784</h2>
         <p>Igreja do Evangelho Quadrangular no Rio de Janeiro</p>
         <p>Conheça nossas igrejas regionais, atividades e programação de eventos.</p>
@@ -1141,6 +1137,37 @@ $atividades = new WP_Query(array(
         
         // Aplicar filtro inicial (3 meses, todas regionais)
         applyFilters();
+    });
+    
+    // Lazy-load do Lottie player após page load para não bloquear rendering
+    window.addEventListener('load', function() {
+        // Aguardar 500ms após load para garantir que conteúdo principal já renderizou
+        setTimeout(function() {
+            // Carregar script do Lottie
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js';
+            
+            script.onload = function() {
+                // Criar elemento Lottie
+                const lottieEl = document.createElement('dotlottie-wc');
+                lottieEl.setAttribute('src', 'https://lottie.host/a05e1752-91df-4669-b7ff-4d7ae5b0f9a9/DATc0OP9Ed.lottie');
+                lottieEl.setAttribute('autoplay', '');
+                lottieEl.setAttribute('loop', '');
+                lottieEl.style.width = '300px';
+                lottieEl.style.height = '200px';
+                lottieEl.style.margin = '0 auto';
+                
+                // Substituir placeholder pela animação
+                const container = document.getElementById('lottie-container');
+                if (container) {
+                    container.innerHTML = '';
+                    container.appendChild(lottieEl);
+                }
+            };
+            
+            document.head.appendChild(script);
+        }, 500);
     });
     </script>
     
