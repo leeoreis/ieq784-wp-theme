@@ -96,7 +96,8 @@ git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
 
 # Push
 msg_info "Fazendo push para o repositório..."
-git push origin main
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+git push origin "$BRANCH"
 git push origin "v$NEW_VERSION"
 
 msg_info "✅ Release v$NEW_VERSION criada com sucesso!"
