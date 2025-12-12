@@ -5,14 +5,20 @@
  * @package Chomneq_Template
  */
 
-// Buscar igrejas regionais
+// Buscar igrejas regionais (exceto "Região 784")
 $igrejas = new WP_Query(array(
     'post_type' => 'igreja_regional',
     'posts_per_page' => -1,
     'post_status' => 'publish',
     'orderby' => 'meta_value_num',
     'meta_key' => '_igreja_ordem',
-    'order' => 'ASC'
+    'order' => 'ASC',
+    'post__not_in' => get_posts(array(
+        'post_type' => 'igreja_regional',
+        'title' => 'Região 784',
+        'posts_per_page' => 1,
+        'fields' => 'ids'
+    ))
 ));
 
 // Buscar atividades (em andamento ou futuras, e ativas)
