@@ -4158,8 +4158,20 @@ add_filter('themes_api', 'chomneq_theme_update_info', 10, 3);
 function chomneq_rename_theme_folder($response, $hook_extra, $result) {
     global $wp_filesystem;
     
-    $theme = wp_get_theme();
-    $theme_slug = $theme->get_stylesheet();
+    // Só processar se for instalação/atualização de tema
+    if (!isset($hook_extra['type']) || $hook_extra['type'] !== 'theme') {
+        return $response;
+    }
+    
+    // Obter slug do tema atual
+    $current_theme = wp_get_theme();
+    $theme_slug = 'ieq-784-with-chomneq'; // Slug fixo do nosso tema
+    
+    // Se for uma atualização, usar o tema que está sendo atualizado
+    if (isset($hook_extra['theme'])) {
+        $theme_slug = $hook_extra['theme'];
+    }
+    
     $github_config = chomneq_get_github_config();
     $github_uri = $github_config['uri'];
     
@@ -4171,20 +4183,86 @@ function chomneq_rename_theme_folder($response, $hook_extra, $result) {
     $repo_parts = explode('/', $github_uri);
     $repo_name = end($repo_parts);
     
-    // Caminho da instalação
+    // Caminhos
     $theme_directory = $result['destination'];
     $proper_destination = WP_CONTENT_DIR . '/themes/' . $theme_slug;
     
-    // Se a pasta tem nome diferente do slug, renomear
-    if ($theme_directory !== $proper_destination && strpos($theme_directory, $repo_name) !== false) {
-        $wp_filesystem->move($theme_directory, $proper_destination, true);
-        $result['destination'] = $proper_destination;
-        $result['destination_name'] = $theme_slug;
+    // Verificar se a pasta instalada tem o nome do repo do GitHub
+    $installed_folder_name = basename($theme_directory);
+    
+    // Se a pasta começa com o nome do repo (ex: ieq784-wp-theme-1.3.2)
+    if (strpos($installed_folder_name, $repo_name) === 0 && $installed_folder_name !== $theme_slug) {
+        
+        // Se o tema já existe, remover a pasta antiga primeiro
+        if ($wp_filesystem->is_dir($proper_destination)) {
+            $wp_filesystem->delete($proper_destination, true);
+        }
+        
+        // Mover a nova pasta para o local correto
+        $moved = $wp_filesystem->move($theme_directory, $proper_destination, true);
+        
+        if ($moved) {
+            $result['destination'] = $proper_destination;
+            $result['destination_name'] = $theme_slug;
+            
+            // Atualizar referência do tema se for o tema ativo
+            if (get_stylesheet() === $installed_folder_name) {
+                switch_theme($theme_slug);
+            }
+        }
     }
     
     return $response;
 }
 add_filter('upgrader_post_install', 'chomneq_rename_theme_folder', 10, 3);
+
+/**
+ * Limpar temas duplicados do GitHub após cada carregamento do admin
+ * Remove pastas como ieq784-wp-theme-1.3.1, ieq784-wp-theme-1.3.2, etc.
+ */
+function chomneq_cleanup_duplicate_themes() {
+    // Só executar no admin
+    if (!is_admin()) {
+        return;
+    }
+    
+    $github_config = chomneq_get_github_config();
+    $github_uri = $github_config['uri'];
+    
+    if (empty($github_uri)) {
+        return;
+    }
+    
+    // Extrair nome do repositório
+    $repo_parts = explode('/', $github_uri);
+    $repo_name = end($repo_parts);
+    
+    $themes_dir = WP_CONTENT_DIR . '/themes';
+    $correct_theme_slug = 'ieq-784-with-chomneq';
+    
+    // Listar todos os temas
+    $themes = wp_get_themes();
+    
+    foreach ($themes as $theme_slug => $theme) {
+        // Se o slug começa com o nome do repo mas não é o tema correto
+        if (strpos($theme_slug, $repo_name) === 0 && $theme_slug !== $correct_theme_slug) {
+            $theme_path = $themes_dir . '/' . $theme_slug;
+            
+            // Verificar se não é o tema ativo
+            if (get_stylesheet() !== $theme_slug && get_template() !== $theme_slug) {
+                // Remover a pasta
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                WP_Filesystem();
+                global $wp_filesystem;
+                
+                if ($wp_filesystem->is_dir($theme_path)) {
+                    $wp_filesystem->delete($theme_path, true);
+                }
+            }
+        }
+    }
+}
+add_action('admin_init', 'chomneq_cleanup_duplicate_themes');
 
 /**
  * Limpar cache de atualizações manualmente (útil para debug)
