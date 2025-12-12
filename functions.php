@@ -188,6 +188,239 @@ function chomneq_add_google_analytics() {
 add_action('wp_head', 'chomneq_add_google_analytics', 1);
 
 /**
+ * Eventos personalizados do Google Analytics via dataLayer
+ * Rastreia interações importantes dos usuários
+ */
+function chomneq_add_analytics_events() {
+    // Não adicionar em ambiente de desenvolvimento local
+    if (defined('WP_DEBUG') && WP_DEBUG && strpos(home_url(), 'localhost') !== false) {
+        return;
+    }
+    
+    // Obter informações da página atual
+    global $post;
+    $page_title = is_singular() ? get_the_title() : wp_get_document_title();
+    $page_type = get_post_type();
+    $page_url = get_permalink();
+    ?>
+    <script>
+    // Tracking de eventos do Google Analytics
+    (function() {
+        // Aguardar gtag estar disponível
+        function waitForGtag(callback) {
+            if (typeof gtag !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(function() { waitForGtag(callback); }, 100);
+            }
+        }
+        
+        waitForGtag(function() {
+            // Helper para enviar eventos
+            function trackEvent(eventName, eventParams) {
+                if (typeof gtag === 'function') {
+                    gtag('event', eventName, eventParams);
+                    console.log('GA4 Event:', eventName, eventParams); // Debug
+                }
+            }
+            
+            // Informações da página
+            var pageInfo = {
+                page_title: '<?php echo esc_js($page_title); ?>',
+                page_type: '<?php echo esc_js($page_type); ?>',
+                page_url: '<?php echo esc_url($page_url); ?>'
+            };
+            
+            // 1. CLIQUES EM BOTÕES E LINKS
+            document.addEventListener('click', function(e) {
+                var target = e.target.closest('a, button, .filter-option, .filter-btn, .filter-modal-btn');
+                
+                if (target) {
+                    var eventData = Object.assign({}, pageInfo);
+                    var elementText = target.textContent.trim().substring(0, 50);
+                    var elementClass = target.className || 'no-class';
+                    var elementId = target.id || 'no-id';
+                    
+                    // Botões de filtro de atividades
+                    if (target.classList.contains('filter-option') || 
+                        target.classList.contains('filter-btn') || 
+                        target.classList.contains('filter-modal-btn')) {
+                        
+                        var filterType = 'unknown';
+                        var filterValue = elementText;
+                        
+                        if (target.closest('#dateFilterModal')) {
+                            filterType = 'date';
+                            filterValue = target.getAttribute('data-months') + '_months';
+                        } else if (target.closest('#regionalFilterModal')) {
+                            filterType = 'regional';
+                            filterValue = target.getAttribute('data-regional');
+                        } else if (target.id === 'openDateFilter') {
+                            filterType = 'date_open';
+                        } else if (target.id === 'openRegionalFilter') {
+                            filterType = 'regional_open';
+                        } else if (target.id === 'clearFilters') {
+                            filterType = 'clear_all';
+                        }
+                        
+                        trackEvent('filter_interaction', {
+                            filter_type: filterType,
+                            filter_value: filterValue,
+                            element_text: elementText,
+                            ...eventData
+                        });
+                    }
+                    
+                    // Links para expositores
+                    else if (target.classList.contains('atividade-link')) {
+                        var atividadeCard = target.closest('.atividade-card');
+                        var atividadeTitle = atividadeCard ? atividadeCard.querySelector('h3').textContent : 'unknown';
+                        
+                        trackEvent('atividade_click', {
+                            atividade_name: atividadeTitle,
+                            link_url: target.href,
+                            element_text: elementText,
+                            ...eventData
+                        });
+                    }
+                    
+                    // Instagram das igrejas
+                    else if (target.classList.contains('instagram-link')) {
+                        var igrejaCard = target.closest('.igreja-card');
+                        var igrejaTitle = igrejaCard ? igrejaCard.querySelector('h3').textContent : 'unknown';
+                        
+                        trackEvent('instagram_click', {
+                            igreja_name: igrejaTitle,
+                            instagram_url: target.href,
+                            ...eventData
+                        });
+                    }
+                    
+                    // Botão Chomneq 2025
+                    else if (target.classList.contains('btn-primary') && elementText.includes('Chomneq')) {
+                        trackEvent('chomneq_button_click', {
+                            button_text: elementText,
+                            destination: target.href,
+                            ...eventData
+                        });
+                    }
+                    
+                    // Links externos genéricos
+                    else if (target.tagName === 'A' && target.href && target.hostname !== window.location.hostname) {
+                        trackEvent('external_link_click', {
+                            link_url: target.href,
+                            link_text: elementText,
+                            link_domain: target.hostname,
+                            ...eventData
+                        });
+                    }
+                    
+                    // Botões genéricos
+                    else if (target.tagName === 'BUTTON' || target.classList.contains('button')) {
+                        trackEvent('button_click', {
+                            button_text: elementText,
+                            button_class: elementClass,
+                            button_id: elementId,
+                            ...eventData
+                        });
+                    }
+                }
+            });
+            
+            // 2. SCROLL DEPTH (25%, 50%, 75%, 100%)
+            var scrollDepths = [25, 50, 75, 100];
+            var triggeredDepths = [];
+            
+            window.addEventListener('scroll', function() {
+                var scrollPercent = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
+                
+                scrollDepths.forEach(function(depth) {
+                    if (scrollPercent >= depth && triggeredDepths.indexOf(depth) === -1) {
+                        triggeredDepths.push(depth);
+                        trackEvent('scroll_depth', {
+                            scroll_depth_percentage: depth,
+                            ...pageInfo
+                        });
+                    }
+                });
+            });
+            
+            // 3. TEMPO NA PÁGINA (30s, 60s, 120s, 300s)
+            var timeMarkers = [30, 60, 120, 300]; // segundos
+            var triggeredTimes = [];
+            
+            timeMarkers.forEach(function(seconds) {
+                setTimeout(function() {
+                    if (triggeredTimes.indexOf(seconds) === -1) {
+                        triggeredTimes.push(seconds);
+                        trackEvent('time_on_page', {
+                            time_seconds: seconds,
+                            time_label: seconds >= 60 ? Math.floor(seconds/60) + 'min' : seconds + 's',
+                            ...pageInfo
+                        });
+                    }
+                }, seconds * 1000);
+            });
+            
+            // 4. ENGAGEMENT COM MODAL DE FILTROS
+            var dateModal = document.getElementById('dateFilterModal');
+            var regionalModal = document.getElementById('regionalFilterModal');
+            
+            if (dateModal) {
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.attributeName === 'class') {
+                            if (dateModal.classList.contains('active')) {
+                                trackEvent('modal_open', {
+                                    modal_type: 'date_filter',
+                                    ...pageInfo
+                                });
+                            }
+                        }
+                    });
+                });
+                observer.observe(dateModal, { attributes: true });
+            }
+            
+            if (regionalModal) {
+                var observer2 = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.attributeName === 'class') {
+                            if (regionalModal.classList.contains('active')) {
+                                trackEvent('modal_open', {
+                                    modal_type: 'regional_filter',
+                                    ...pageInfo
+                                });
+                            }
+                        }
+                    });
+                });
+                observer2.observe(regionalModal, { attributes: true });
+            }
+            
+            // 5. BUSCA NO SITE
+            var searchForms = document.querySelectorAll('form[role="search"], .search-form');
+            searchForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    var searchInput = form.querySelector('input[type="search"], input[name="s"]');
+                    if (searchInput) {
+                        trackEvent('search', {
+                            search_term: searchInput.value,
+                            ...pageInfo
+                        });
+                    }
+                });
+            });
+            
+            console.log('✅ Google Analytics Event Tracking ativado');
+        });
+    })();
+    </script>
+    <?php
+}
+add_action('wp_footer', 'chomneq_add_analytics_events', 99);
+
+/**
  * Otimizações de Performance
  */
 function chomneq_performance_optimizations() {
