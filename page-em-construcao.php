@@ -45,7 +45,7 @@ $atividades = new WP_Query(array(
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php bloginfo('name'); ?> - Em Construção</title>
+    <title>Portal da Região 784 - IEQ Rio de Janeiro</title>
     <script
   src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js"
   type="module"
@@ -750,9 +750,9 @@ $atividades = new WP_Query(array(
             autoplay
             loop
         ></dotlottie-wc>
-        <h2>Nosso site está em construção</h2>
-        <p>Estamos trabalhando para trazer uma experiência incrível para você. </p>
-        <p>Enquanto isso, conheça nossas regionais e atividades.</p>
+        <h2>Bem-vindo ao Portal da Região 784</h2>
+        <p>Igreja do Evangelho Quadrangular no Rio de Janeiro</p>
+        <p>Conheça nossas igrejas regionais, atividades e programação de eventos.</p>
 
     </div>
     

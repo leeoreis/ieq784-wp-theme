@@ -1,13 +1,24 @@
-# IEQ 784 Template - With Chomneq Features
+# Portal da Região 784 - IEQ Rio de Janeiro
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![WordPress](https://img.shields.io/badge/wordpress-6.0%2B-blue.svg)
-![PHP](https://img.shields.io/badge/php-7.4%2B-purple.svg)
+![PHP](https://img.shields.io/badge/php-8.0%2B-purple.svg)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
+![SEO](https://img.shields.io/badge/SEO-optimized-success.svg)
 
-Template personalizado para a IEQ Região 784 com funcionalidades avançadas para gerenciamento de igrejas regionais, catálogo de expositores e agenda de atividades.
+Portal oficial da Região 784 da Igreja do Evangelho Quadrangular no Rio de Janeiro. Sistema completo para gerenciamento de igrejas regionais, catálogo de expositores e agenda de atividades, com otimizações avançadas de SEO e performance.
 
 ## ✨ Funcionalidades
+
+### 🔍 SEO e Marketing Digital
+- **Meta tags otimizadas** para Google
+- **Open Graph** completo (Facebook, WhatsApp, LinkedIn)
+- **Twitter Cards** configuradas
+- **Schema.org JSON-LD** (Church + WebSite)
+- **Geo tags** para SEO local (Rio de Janeiro)
+- **Canonical URLs** automáticas
+- **robots.txt** otimizado
+- **Sitemap XML** hint
 
 ### 📍 Igrejas Regionais
 - Cadastro completo de igrejas regionais

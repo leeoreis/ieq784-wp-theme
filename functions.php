@@ -41,6 +41,126 @@ function chomneq_setup() {
 add_action('after_setup_theme', 'chomneq_setup');
 
 /**
+ * Meta tags SEO e Open Graph
+ */
+function chomneq_add_meta_tags() {
+    $site_name = 'Portal da Região 784 - IEQ Rio de Janeiro';
+    $site_description = 'Portal da Região 784 da Igreja do Evangelho Quadrangular no Rio de Janeiro. Confira nossas igrejas regionais, atividades, eventos e programações.';
+    $site_url = home_url();
+    $site_image = 'https://assets-ieq784.leoreis.dev.br/wp-content/uploads/og-image.png';
+    
+    // SEO Básico
+    echo '<meta name="description" content="' . esc_attr($site_description) . '">' . "\n";
+    echo '<meta name="keywords" content="IEQ, Igreja do Evangelho Quadrangular, Região 784, Rio de Janeiro, RJ, Padre Miguel, Igreja Evangélica, Cultos, Eventos, Programação">' . "\n";
+    echo '<meta name="author" content="Leonardo Reis dos Santos">' . "\n";
+    echo '<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">' . "\n";
+    
+    // Open Graph (Facebook, LinkedIn, WhatsApp)
+    echo '<meta property="og:locale" content="pt_BR">' . "\n";
+    echo '<meta property="og:type" content="website">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr($site_name) . '">' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr($site_description) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url($site_url) . '">' . "\n";
+    echo '<meta property="og:site_name" content="' . esc_attr($site_name) . '">' . "\n";
+    
+    // Imagem OG
+    if (is_singular() && has_post_thumbnail()) {
+        $thumbnail = wp_get_attachment_image_src(get_post_thumbnail_id(), 'full');
+        if ($thumbnail) {
+            echo '<meta property="og:image" content="' . esc_url($thumbnail[0]) . '">' . "\n";
+            echo '<meta property="og:image:width" content="' . esc_attr($thumbnail[1]) . '">' . "\n";
+            echo '<meta property="og:image:height" content="' . esc_attr($thumbnail[2]) . '">' . "\n";
+        }
+    } else {
+        echo '<meta property="og:image" content="' . esc_url($site_image) . '">' . "\n";
+        echo '<meta property="og:image:width" content="1200">' . "\n";
+        echo '<meta property="og:image:height" content="630">' . "\n";
+    }
+    
+    // Twitter Card
+    echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr($site_name) . '">' . "\n";
+    echo '<meta name="twitter:description" content="' . esc_attr($site_description) . '">' . "\n";
+    
+    // Informações de contato e localização (Schema.org)
+    echo '<meta itemprop="name" content="' . esc_attr($site_name) . '">' . "\n";
+    echo '<meta itemprop="description" content="' . esc_attr($site_description) . '">' . "\n";
+    
+    // Canonical URL
+    echo '<link rel="canonical" href="' . esc_url($site_url) . '">' . "\n";
+    
+    // Geo tags para SEO local
+    echo '<meta name="geo.region" content="BR-RJ">' . "\n";
+    echo '<meta name="geo.placename" content="Rio de Janeiro">' . "\n";
+    echo '<meta name="geo.position" content="-22.878178;-43.461497">' . "\n";
+    echo '<meta name="ICBM" content="-22.878178, -43.461497">' . "\n";
+}
+add_action('wp_head', 'chomneq_add_meta_tags', 1);
+
+/**
+ * Schema.org JSON-LD para SEO
+ */
+function chomneq_add_schema_org() {
+    $schema = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'Church',
+        'name' => 'IEQ Região 784 - Rio de Janeiro',
+        'description' => 'Portal da Região 784 da Igreja do Evangelho Quadrangular no Rio de Janeiro',
+        'url' => home_url(),
+        'logo' => get_template_directory_uri() . '/assets/logo.png',
+        'telephone' => '+55-21-XXXX-XXXX',
+        'address' => array(
+            '@type' => 'PostalAddress',
+            'streetAddress' => 'Rua Murundu, 377',
+            'addressLocality' => 'Padre Miguel',
+            'addressRegion' => 'RJ',
+            'postalCode' => '21715-300',
+            'addressCountry' => 'BR'
+        ),
+        'geo' => array(
+            '@type' => 'GeoCoordinates',
+            'latitude' => '-22.878178',
+            'longitude' => '-43.461497'
+        ),
+        'sameAs' => array(
+            'https://www.instagram.com/ieq784',
+            'https://www.facebook.com/ieq784'
+        )
+    );
+    
+    echo '<script type="application/ld+json">' . json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>' . "\n";
+    
+    // WebSite Schema
+    $website_schema = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => 'Portal da Região 784 - IEQ Rio de Janeiro',
+        'url' => home_url(),
+        'potentialAction' => array(
+            '@type' => 'SearchAction',
+            'target' => home_url('/?s={search_term_string}'),
+            'query-input' => 'required name=search_term_string'
+        ),
+        'author' => array(
+            '@type' => 'Person',
+            'name' => 'Leonardo Reis dos Santos',
+            'url' => 'https://www.linkedin.com/in/leeoreis/'
+        )
+    );
+    
+    echo '<script type="application/ld+json">' . json_encode($website_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>' . "\n";
+}
+add_action('wp_head', 'chomneq_add_schema_org', 2);
+
+/**
+ * Adicionar sitemap XML hint
+ */
+function chomneq_add_sitemap_hint() {
+    echo '<link rel="sitemap" type="application/xml" title="Sitemap" href="' . home_url('/sitemap.xml') . '">' . "\n";
+}
+add_action('wp_head', 'chomneq_add_sitemap_hint', 3);
+
+/**
  * Otimizações de Performance
  */
 function chomneq_performance_optimizations() {
