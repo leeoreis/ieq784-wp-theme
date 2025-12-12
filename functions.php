@@ -164,15 +164,15 @@ add_action('wp_head', 'chomneq_add_sitemap_hint', 3);
  * Google Analytics (GA4)
  */
 function chomneq_add_google_analytics() {
-    // Não carregar no ambiente de desenvolvimento
-    if (defined('WP_DEBUG') && WP_DEBUG) {
+    // Não carregar no ambiente de desenvolvimento (localhost)
+    if (defined('WP_DEBUG') && WP_DEBUG && strpos(home_url(), 'localhost') !== false) {
         return;
     }
     
-    // Não carregar para usuários logados (opcional, remova se quiser trackear admins)
-    if (is_user_logged_in() && current_user_can('manage_options')) {
-        return;
-    }
+    // ATENÇÃO: Comentado para trackear todos os usuários, incluindo admins
+    // Descomente a linha abaixo se quiser EXCLUIR admins do tracking:
+    // if (is_user_logged_in() && current_user_can('manage_options')) { return; }
+    
     ?>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2PGD5JSF40"></script>
