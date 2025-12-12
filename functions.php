@@ -4011,6 +4011,33 @@ function chomneq_page_settings_page() {
  */
 
 /**
+ * Obter GitHub URI do style.css
+ */
+function chomneq_get_github_config() {
+    $theme = wp_get_theme();
+    $stylesheet_path = $theme->get_stylesheet_directory() . '/style.css';
+    
+    if (!file_exists($stylesheet_path)) {
+        return array('uri' => '', 'branch' => 'master');
+    }
+    
+    $style_content = file_get_contents($stylesheet_path);
+    
+    // Extrair GitHub Theme URI
+    preg_match('/GitHub Theme URI:\s*(.+)/i', $style_content, $uri_matches);
+    $github_uri = !empty($uri_matches[1]) ? trim($uri_matches[1]) : '';
+    
+    // Extrair GitHub Branch
+    preg_match('/GitHub Branch:\s*(.+)/i', $style_content, $branch_matches);
+    $github_branch = !empty($branch_matches[1]) ? trim($branch_matches[1]) : 'master';
+    
+    return array(
+        'uri' => $github_uri,
+        'branch' => $github_branch
+    );
+}
+
+/**
  * Verificar atualizações do tema no GitHub
  */
 function chomneq_check_theme_update($transient) {
@@ -4023,8 +4050,9 @@ function chomneq_check_theme_update($transient) {
     $current_version = $theme->get('Version');
     
     // Obter informações do GitHub do style.css
-    $github_uri = $theme->get('GitHub Theme URI');
-    $github_branch = $theme->get('GitHub Branch') ?: 'main';
+    $github_config = chomneq_get_github_config();
+    $github_uri = $github_config['uri'];
+    $github_branch = $github_config['branch'];
     
     if (empty($github_uri)) {
         return $transient;
@@ -4080,7 +4108,8 @@ function chomneq_theme_update_info($false, $action, $response) {
     }
     
     $theme = wp_get_theme($response->theme);
-    $github_uri = $theme->get('GitHub Theme URI');
+    $github_config = chomneq_get_github_config();
+    $github_uri = $github_config['uri'];
     
     if (empty($github_uri)) {
         return $false;
@@ -4131,7 +4160,8 @@ function chomneq_rename_theme_folder($response, $hook_extra, $result) {
     
     $theme = wp_get_theme();
     $theme_slug = $theme->get_stylesheet();
-    $github_uri = $theme->get('GitHub Theme URI');
+    $github_config = chomneq_get_github_config();
+    $github_uri = $github_config['uri'];
     
     if (empty($github_uri)) {
         return $response;
@@ -4163,3 +4193,4 @@ function chomneq_clear_theme_update_cache() {
     delete_site_transient('update_themes');
 }
 // Descomentar para forçar verificação: add_action('admin_init', 'chomneq_clear_theme_update_cache');
+
