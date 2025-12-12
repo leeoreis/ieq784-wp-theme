@@ -4115,24 +4115,52 @@ function chomneq_theme_update_info($false, $action, $response) {
         return $false;
     }
     
-    $api_url = "https://api.github.com/repos/{$github_uri}/releases/latest";
+    // Verificar cache (válido por 1 hora)
+    $cache_key = 'chomneq_release_info_' . md5($github_uri);
+    $cached_data = get_transient($cache_key);
     
-    $api_response = wp_remote_get($api_url, array(
-        'timeout' => 10,
-        'headers' => array(
-            'Accept' => 'application/vnd.github.v3+json',
-            'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
-        )
-    ));
-    
-    if (is_wp_error($api_response)) {
-        return $false;
-    }
-    
-    $release_data = json_decode(wp_remote_retrieve_body($api_response), true);
-    
-    if (empty($release_data)) {
-        return $false;
+    if ($cached_data !== false) {
+        $release_data = $cached_data;
+    } else {
+        // Buscar do GitHub
+        $api_url = "https://api.github.com/repos/{$github_uri}/releases/latest";
+        
+        $api_response = wp_remote_get($api_url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'Accept' => 'application/vnd.github.v3+json',
+                'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+            )
+        ));
+        
+        // Se houver erro, mostrar informações básicas sem changelog
+        if (is_wp_error($api_response)) {
+            $info = new stdClass();
+            $info->name = $theme->get('Name');
+            $info->slug = $response->theme;
+            $info->version = isset($response->new_version) ? $response->new_version : $theme->get('Version');
+            $info->author = $theme->get('Author');
+            $info->homepage = "https://github.com/{$github_uri}";
+            $info->download_link = "https://github.com/{$github_uri}/releases/latest";
+            $info->sections = array(
+                'description' => $theme->get('Description'),
+                'changelog' => '<p><strong>⚠️ Não foi possível conectar ao GitHub para obter detalhes da release.</strong></p>
+                                <p>Motivo: ' . esc_html($api_response->get_error_message()) . '</p>
+                                <p>Você ainda pode instalar a atualização normalmente. Para ver as mudanças, visite:</p>
+                                <p><a href="https://github.com/' . esc_attr($github_uri) . '/releases" target="_blank">
+                                https://github.com/' . esc_html($github_uri) . '/releases</a></p>',
+            );
+            return $info;
+        }
+        
+        $release_data = json_decode(wp_remote_retrieve_body($api_response), true);
+        
+        if (empty($release_data)) {
+            return $false;
+        }
+        
+        // Salvar no cache por 1 hora
+        set_transient($cache_key, $release_data, HOUR_IN_SECONDS);
     }
     
     $info = new stdClass();
@@ -4142,10 +4170,22 @@ function chomneq_theme_update_info($false, $action, $response) {
     $info->author = $theme->get('Author');
     $info->homepage = "https://github.com/{$github_uri}";
     $info->download_link = "https://github.com/{$github_uri}/archive/refs/tags/{$release_data['tag_name']}.zip";
+    
+    // Formatar changelog
+    $changelog = isset($release_data['body']) && !empty($release_data['body']) 
+        ? nl2br(esc_html($release_data['body'])) 
+        : '<p>Confira as mudanças completas no <a href="https://github.com/' . esc_attr($github_uri) . '/releases/tag/' . esc_attr($release_data['tag_name']) . '" target="_blank">GitHub</a>.</p>';
+    
     $info->sections = array(
         'description' => $theme->get('Description'),
-        'changelog' => isset($release_data['body']) ? nl2br($release_data['body']) : 'Confira as mudanças no GitHub.',
+        'changelog' => $changelog,
     );
+    
+    // Adicionar data de publicação se disponível
+    if (isset($release_data['published_at'])) {
+        $date = date_i18n(get_option('date_format'), strtotime($release_data['published_at']));
+        $info->sections['changelog'] = '<p><strong>📅 Publicado em:</strong> ' . $date . '</p>' . $info->sections['changelog'];
+    }
     
     return $info;
 }
