@@ -1728,7 +1728,20 @@ function chomneq_atividade_info_callback($post) {
     $cta_texto = get_post_meta($post->ID, '_atividade_cta_texto', true);
     $cor = get_post_meta($post->ID, '_atividade_cor', true) ?: '#667eea';
     $ativa = get_post_meta($post->ID, '_atividade_ativa', true);
+    $fixa = get_post_meta($post->ID, '_atividade_fixa', true);
     $regional_id = get_post_meta($post->ID, '_atividade_regional', true);
+    
+    // Contar caracteres do conteúdo
+    $content = get_post_field('post_content', $post->ID);
+    $content_length = mb_strlen(wp_strip_all_tags($content));
+    $content_warning = '';
+    if ($content_length > 215) {
+        $content_warning = '<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 10px 0;"><strong>⚠️ Atenção:</strong> A descrição tem ' . $content_length . ' caracteres. Será limitada a 215 caracteres ao salvar.</div>';
+    }
+    echo '<div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 12px; margin-bottom: 20px;">';
+    echo '<strong>📝 Dica de Descrição:</strong> Mantenha a descrição do evento (conteúdo principal acima) com no máximo <strong>215 caracteres</strong> para melhor visualização no card.';
+    echo '</div>';
+    echo $content_warning;
     
     // Buscar todas as regionais disponíveis
     $regionais = get_posts(array(
@@ -1760,6 +1773,7 @@ function chomneq_atividade_info_callback($post) {
             <td>
                 <input type="date" id="atividade_data_inicio" name="atividade_data_inicio" 
                        value="<?php echo esc_attr($data_inicio); ?>" class="regular-text">
+                <p class="description">Deixe em branco para atividades fixas (sem data específica)</p>
             </td>
         </tr>
         <tr>
@@ -1815,9 +1829,124 @@ function chomneq_atividade_info_callback($post) {
                 <p class="description">Somente atividades ativas e com data futura serão exibidas</p>
             </td>
         </tr>
+        <tr>
+            <th><label for="atividade_fixa">Atividade Fixa:</label></th>
+            <td>
+                <label>
+                    <input type="checkbox" id="atividade_fixa" name="atividade_fixa" value="1" 
+                           <?php checked($fixa, '1'); ?>>
+                    Exibir sempre no topo (atividade permanente)
+                </label>
+                <p class="description">Atividades fixas não precisam de data e aparecem sempre em primeiro lugar na listagem</p>
+            </td>
+        </tr>
     </table>
     <?php
 }
+
+// Adicionar contador de caracteres no admin de atividades
+function chomneq_add_char_counter_script() {
+    global $post_type;
+    if ($post_type === 'atividade') {
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            var charCounterInitialized = false;
+            
+            function updateCharCount() {
+                var editor = tinymce.get('content');
+                var charCount = 0;
+                
+                if (editor && !editor.isHidden()) {
+                    // Editor visual
+                    var text = editor.getContent({format: 'text'});
+                    charCount = text.length;
+                } else {
+                    // Editor de texto
+                    var text = $('#content').val();
+                    var tempDiv = $('<div>').html(text);
+                    charCount = tempDiv.text().length;
+                }
+                
+                // Inserir o contador após o contador de palavras
+                var wordCountTd = $('#wp-word-count');
+                if (wordCountTd.length) {
+                    var charCounter = wordCountTd.find('.char-count-wrapper');
+                    if (charCounter.length === 0) {
+                        wordCountTd.append(' | Caracteres: <span class="char-count-wrapper"><span class="char-count">0</span></span>');
+                        charCounter = wordCountTd.find('.char-count-wrapper');
+                    }
+                    
+                    var color = charCount > 215 ? '#dc3232' : 'inherit';
+                    wordCountTd.find('.char-count').html(charCount).css('color', color);
+                    
+                    // Atualizar ou remover aviso
+                    wordCountTd.find('.char-warning').remove();
+                    if (charCount > 215) {
+                        charCounter.append('<span class="char-warning" style="color:#dc3232"> ⚠️</span>');
+                    }
+                }
+            }
+            
+            function initCharCounter() {
+                if (charCounterInitialized) return;
+                
+                var editor = tinymce.get('content');
+                if (editor) {
+                    charCounterInitialized = true;
+                    
+                    // Eventos do editor visual
+                    editor.on('keyup', updateCharCount);
+                    editor.on('change', updateCharCount);
+                    editor.on('paste', function() {
+                        setTimeout(updateCharCount, 100);
+                    });
+                    
+                    // Atualização inicial
+                    updateCharCount();
+                }
+            }
+            
+            // Tentar inicializar quando o TinyMCE estiver pronto
+            if (typeof tinymce !== 'undefined') {
+                if (tinymce.get('content')) {
+                    initCharCounter();
+                } else {
+                    tinymce.on('AddEditor', function(e) {
+                        if (e.editor.id === 'content') {
+                            setTimeout(initCharCounter, 100);
+                        }
+                    });
+                }
+            }
+            
+            // Atualizar ao digitar no editor de texto
+            $('#content').on('input keyup paste', updateCharCount);
+            
+            // Atualizar ao trocar de aba
+            $('.wp-switch-editor').on('click', function() {
+                setTimeout(function() {
+                    charCounterInitialized = false;
+                    initCharCounter();
+                    updateCharCount();
+                }, 200);
+            });
+            
+            // Tentar atualizar periodicamente nos primeiros segundos
+            var attempts = 0;
+            var interval = setInterval(function() {
+                updateCharCount();
+                attempts++;
+                if (attempts >= 5 || charCounterInitialized) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        });
+        </script>
+        <?php
+    }
+}
+add_action('admin_print_footer_scripts', 'chomneq_add_char_counter_script');
 
 function chomneq_save_atividade_meta($post_id) {
     if (!isset($_POST['atividade_meta_nonce']) || !wp_verify_nonce($_POST['atividade_meta_nonce'], 'chomneq_save_atividade_meta')) {
@@ -1852,9 +1981,51 @@ function chomneq_save_atividade_meta($post_id) {
         });
     }
     
+    // Limitar conteúdo a 215 caracteres
+    $content = get_post_field('post_content', $post_id);
+    $content_plain = wp_strip_all_tags($content);
+    
+    if (mb_strlen($content_plain) > 215) {
+        $content_truncated = mb_substr($content_plain, 0, 215);
+        
+        remove_action('save_post_atividade', 'chomneq_save_atividade_meta');
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_content' => $content_truncated
+        ));
+        add_action('save_post_atividade', 'chomneq_save_atividade_meta');
+        
+        // Avisar usuário sobre o corte
+        set_transient('atividade_content_truncated_' . $post_id, 'A descrição foi limitada a 215 caracteres para melhor exibição.', 45);
+    }
+    
+    // Limitar conteúdo a 215 caracteres se necessário
+    if (isset($_POST['content'])) {
+        $content = wp_kses_post($_POST['content']);
+        $content_plain = wp_strip_all_tags($content);
+        
+        if (mb_strlen($content_plain) > 215) {
+            $content = mb_substr($content_plain, 0, 215);
+            
+            remove_action('save_post_atividade', 'chomneq_save_atividade_meta');
+            wp_update_post(array(
+                'ID' => $post_id,
+                'post_content' => $content
+            ));
+            add_action('save_post_atividade', 'chomneq_save_atividade_meta');
+            
+            // Avisar usuário sobre o corte
+            set_transient('atividade_content_truncated_' . $post_id, 'A descrição foi limitada a 215 caracteres para melhor exibição.', 45);
+        }
+    }
+    
     // Salvar campo ativa (checkbox)
     $ativa = isset($_POST['atividade_ativa']) ? '1' : '0';
     update_post_meta($post_id, '_atividade_ativa', $ativa);
+    
+    // Salvar campo fixa (checkbox)
+    $fixa = isset($_POST['atividade_fixa']) ? '1' : '0';
+    update_post_meta($post_id, '_atividade_fixa', $fixa);
     
     // Salvar campo regional
     if (isset($_POST['atividade_regional'])) {

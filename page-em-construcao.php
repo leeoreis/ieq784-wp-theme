@@ -21,9 +21,31 @@ $igrejas = new WP_Query(array(
     ))
 ));
 
-// Buscar atividades (em andamento ou futuras, e ativas)
+// Buscar atividades fixas (sempre exibidas, sem filtro de data)
+$atividades_fixas = new WP_Query(array(
+    'post_type' => 'atividade',
+    'posts_per_page' => -1,
+    'post_status' => 'publish',
+    'orderby' => 'menu_order title',
+    'order' => 'ASC',
+    'meta_query' => array(
+        'relation' => 'AND',
+        array(
+            'key' => '_atividade_ativa',
+            'value' => '1',
+            'compare' => '='
+        ),
+        array(
+            'key' => '_atividade_fixa',
+            'value' => '1',
+            'compare' => '='
+        )
+    )
+));
+
+// Buscar atividades com data (em andamento ou futuras, e ativas, não fixas)
 $hoje = wp_date('Y-m-d');
-$atividades = new WP_Query(array(
+$atividades_datas = new WP_Query(array(
     'post_type' => 'atividade',
     'posts_per_page' => -1,
     'post_status' => 'publish',
@@ -42,8 +64,49 @@ $atividades = new WP_Query(array(
             'key' => '_atividade_ativa',
             'value' => '1',
             'compare' => '='
+        ),
+        array(
+            'relation' => 'OR',
+            array(
+                'key' => '_atividade_fixa',
+                'value' => '1',
+                'compare' => '!='
+            ),
+            array(
+                'key' => '_atividade_fixa',
+                'compare' => 'NOT EXISTS'
+            )
         )
     )
+));
+
+// Combinar os posts manualmente iterando sobre ambas as queries
+$all_atividades = array();
+
+// Adicionar atividades fixas primeiro
+if ($atividades_fixas->have_posts()) {
+    while ($atividades_fixas->have_posts()) {
+        $atividades_fixas->the_post();
+        $all_atividades[] = $post;
+    }
+    wp_reset_postdata();
+}
+
+// Adicionar atividades com data depois
+if ($atividades_datas->have_posts()) {
+    while ($atividades_datas->have_posts()) {
+        $atividades_datas->the_post();
+        $all_atividades[] = $post;
+    }
+    wp_reset_postdata();
+}
+
+// Criar uma query "fake" para o loop usar corretamente
+$atividades = new WP_Query(array(
+    'post_type' => 'atividade',
+    'post__in' => array_map(function($p) { return $p->ID; }, $all_atividades),
+    'orderby' => 'post__in',
+    'posts_per_page' => -1
 ));
 ?>
 <!DOCTYPE html>
@@ -88,6 +151,7 @@ $atividades = new WP_Query(array(
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            min-height: 60vh;
         }
         
         .hero::before {
@@ -389,10 +453,12 @@ $atividades = new WP_Query(array(
             position: relative;
         }
         
+        
         .atividade-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 20px 50px rgba(0,0,0,0.15);
         }
+        
         
         .atividade-header {
             color: white;
@@ -436,19 +502,21 @@ $atividades = new WP_Query(array(
         
         .atividade-body {
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
         }
         
         .atividade-description {
             color: #555;
             line-height: 1.6;
-            margin-bottom: 1.5rem;
         }
         
         .atividade-info {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-            margin-bottom: 1.5rem;
         }
 
         .atividade-regional {
@@ -490,6 +558,7 @@ $atividades = new WP_Query(array(
             text-decoration: none;
             font-weight: 600;
             transition: all 0.3s;
+            margin-top: auto;
         }
         
         .atividade-link:hover {
@@ -746,14 +815,11 @@ $atividades = new WP_Query(array(
     ?>
     <div class="page-content">
     <div class="hero" <?php echo $hero_style; ?>>
-        <img src="<?php echo get_template_directory_uri(); ?>/template-parts/logo IEQ.png" alt="Logo IEQ" style="width: 150px; margin: 1rem auto; display: block;" />
-        <h1>IEQ Região 784</h1>
-        <!-- Placeholder enquanto Lottie carrega -->
-        <div id="lottie-container" style="width: 300px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-            <div style="color: rgba(255,255,255,0.5); font-size: 2rem;">✨</div>
-        </div>
+        <img src="https://assets-ieq784.leoreis.dev.br/wp-content/uploads/logo-784.PNG" alt="Logo Região 784" style="width: 300px; margin: 1rem auto; display: block;" />
         <h2>Bem-vindo ao Portal da Região 784</h2>
         <p>Igreja do Evangelho Quadrangular no Rio de Janeiro</p>
+        <br />
+        <br />
         <p>Conheça nossas igrejas regionais, atividades e programação de eventos.</p>
 
     </div>
@@ -793,6 +859,7 @@ $atividades = new WP_Query(array(
                     $link = get_post_meta(get_the_ID(), '_atividade_link', true);
                     $cta_texto = get_post_meta(get_the_ID(), '_atividade_cta_texto', true);
                     $cor = get_post_meta(get_the_ID(), '_atividade_cor', true) ?: '#667eea';
+                    $fixa = get_post_meta(get_the_ID(), '_atividade_fixa', true);
                     $regional_id = get_post_meta(get_the_ID(), '_atividade_regional', true);
                     
                     // Buscar informações da regional
@@ -821,14 +888,21 @@ $atividades = new WP_Query(array(
                     
                     $has_thumb = has_post_thumbnail();
                     
-                    // Calcular timestamp para filtro
-                    $data_timestamp = $data_inicio ? strtotime($data_inicio) : 0;
+                    // Calcular timestamp para filtro (atividades fixas usam timestamp 0 para sempre aparecer)
+                    $data_timestamp = ($fixa === '1') ? 0 : ($data_inicio ? strtotime($data_inicio) : 0);
+                    
+                    // Classe adicional para atividades fixas
+                    $fixa_class = ($fixa === '1') ? ' atividade-fixa' : '';
                 ?>
-                <div class="atividade-card" data-date="<?php echo esc_attr($data_timestamp); ?>" data-regional="<?php echo esc_attr($regional_id ? $regional_id : '0'); ?>">
+                <div class="atividade-card<?php echo $fixa_class; ?>" data-date="<?php echo esc_attr($data_timestamp); ?>" data-regional="<?php echo esc_attr($regional_id ? $regional_id : '0'); ?>" data-fixa="<?php echo esc_attr($fixa === '1' ? '1' : '0'); ?>">
                     <div class="atividade-header" style="background-image: url('<?php echo esc_url(get_the_post_thumbnail_url(get_the_ID(), 'large')); ?>');">
+                        
                         <h3><?php the_title(); ?></h3>
                         <?php if ($data_formatada) : ?>
                             <div class="atividade-meta">🗓 <?php echo esc_html($data_formatada); ?></div>
+                        <?php elseif ($fixa === '1') : ?>
+                            <br />
+                            <!-- <div class="atividade-meta">📌 Atividade Permanente</div> -->
                         <?php endif; ?>
                     </div>
                     
@@ -1032,9 +1106,10 @@ $atividades = new WP_Query(array(
             atividadeCards.forEach(card => {
                 const cardDate = parseInt(card.getAttribute('data-date'));
                 const cardRegional = parseInt(card.getAttribute('data-regional'));
+                const isFixa = card.getAttribute('data-fixa') === '1';
                 
-                // Verificar filtro de data
-                const passDateFilter = cardDate >= now && cardDate <= limitTimestamp;
+                // Atividades fixas sempre passam no filtro de data
+                const passDateFilter = isFixa || (cardDate >= now && cardDate <= limitTimestamp);
                 
                 // Verificar filtro de regional (0 = todas)
                 const passRegionalFilter = currentRegional === 0 || cardRegional === currentRegional;
