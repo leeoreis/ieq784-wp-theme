@@ -808,19 +808,28 @@ $atividades = new WP_Query(array(
 </head>
 <body>
     <?php
-    // Buscar imagem de background da hero
+    // Buscar configurações da hero
     $hero_bg_image_id = get_option('chomneq_hero_background_image', '');
     $hero_bg_image_url = $hero_bg_image_id ? wp_get_attachment_image_url($hero_bg_image_id, 'full') : '';
     $hero_style = $hero_bg_image_url ? 'style="background-image: url(' . esc_url($hero_bg_image_url) . ');"' : '';
+    
+    $hero_logo_image_id = get_option('chomneq_hero_logo_image', '');
+    $hero_logo_image_url = $hero_logo_image_id ? wp_get_attachment_image_url($hero_logo_image_id, 'full') : 'https://assets-ieq784.leoreis.dev.br/wp-content/uploads/logo-784.PNG';
+    
+    $hero_title = get_option('chomneq_hero_title', 'Bem-vindo ao Portal da Região 784');
+    $hero_subtitle = get_option('chomneq_hero_subtitle', 'Igreja do Evangelho Quadrangular no Rio de Janeiro');
+    $hero_description = get_option('chomneq_hero_description', 'Conheça nossas igrejas regionais, atividades e programação de eventos.');
     ?>
     <div class="page-content">
     <div class="hero" <?php echo $hero_style; ?>>
-        <img src="https://assets-ieq784.leoreis.dev.br/wp-content/uploads/logo-784.PNG" alt="Logo Região 784" style="width: 300px; margin: 1rem auto; display: block;" />
-        <h2>Bem-vindo ao Portal da Região 784</h2>
-        <p>Igreja do Evangelho Quadrangular no Rio de Janeiro</p>
+        <?php if ($hero_logo_image_url) : ?>
+            <img src="<?php echo esc_url($hero_logo_image_url); ?>" alt="Logo Região 784" style="width: 300px; margin: 1rem auto; display: block;" />
+        <?php endif; ?>
+        <h2><?php echo esc_html($hero_title); ?></h2>
+        <p><?php echo esc_html($hero_subtitle); ?></p>
         <br />
         <br />
-        <p>Conheça nossas igrejas regionais, atividades e programação de eventos.</p>
+        <p><?php echo esc_html($hero_description); ?></p>
 
     </div>
     

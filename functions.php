@@ -4290,12 +4290,22 @@ function chomneq_display_comment($comment, $depth = 0) {
 function chomneq_add_page_settings_menu() {
     add_menu_page(
         'Configurações da Página',
-        'Página em Construção',
+        'Página Inicial',
         'manage_options',
         'chomneq-page-settings',
         'chomneq_page_settings_page',
         'dashicons-admin-generic',
         65
+    );
+    
+    // Submenu para Empreendedores Regionais
+    add_submenu_page(
+        'chomneq-page-settings',
+        'Empreendedores Regionais',
+        'Empreendedores',
+        'manage_options',
+        'chomneq-empreendedores-settings',
+        'chomneq_empreendedores_settings_page'
     );
 }
 add_action('admin_menu', 'chomneq_add_page_settings_menu');
@@ -4304,8 +4314,8 @@ add_action('admin_menu', 'chomneq_add_page_settings_menu');
  * Enfileirar scripts necessários para o Media Uploader
  */
 function chomneq_enqueue_page_settings_scripts($hook) {
-    // Carregar apenas na página de configurações
-    if ($hook !== 'toplevel_page_chomneq-page-settings') {
+    // Carregar apenas nas páginas de configurações
+    if ($hook !== 'toplevel_page_chomneq-page-settings' && $hook !== 'página-inicial_page_chomneq-empreendedores-settings') {
         return;
     }
     
@@ -4332,12 +4342,35 @@ function chomneq_page_settings_page() {
             update_option('chomneq_hero_background_image', intval($_POST['hero_background_image']));
         }
         
+        // Salvar logo
+        if (isset($_POST['hero_logo_image'])) {
+            update_option('chomneq_hero_logo_image', intval($_POST['hero_logo_image']));
+        }
+        
+        // Salvar textos da hero
+        if (isset($_POST['hero_title'])) {
+            update_option('chomneq_hero_title', sanitize_text_field($_POST['hero_title']));
+        }
+        if (isset($_POST['hero_subtitle'])) {
+            update_option('chomneq_hero_subtitle', sanitize_text_field($_POST['hero_subtitle']));
+        }
+        if (isset($_POST['hero_description'])) {
+            update_option('chomneq_hero_description', sanitize_text_field($_POST['hero_description']));
+        }
+        
         echo '<div class="notice notice-success is-dismissible"><p>Configurações salvas com sucesso!</p></div>';
     }
     
     // Buscar valores atuais
     $hero_bg_image_id = get_option('chomneq_hero_background_image', '');
     $hero_bg_image_url = $hero_bg_image_id ? wp_get_attachment_image_url($hero_bg_image_id, 'full') : '';
+    
+    $hero_logo_image_id = get_option('chomneq_hero_logo_image', '');
+    $hero_logo_image_url = $hero_logo_image_id ? wp_get_attachment_image_url($hero_logo_image_id, 'full') : '';
+    
+    $hero_title = get_option('chomneq_hero_title', 'Bem-vindo ao Portal da Região 784');
+    $hero_subtitle = get_option('chomneq_hero_subtitle', 'Igreja do Evangelho Quadrangular no Rio de Janeiro');
+    $hero_description = get_option('chomneq_hero_description', 'Conheça nossas igrejas regionais, atividades e programação de eventos.');
     
     ?>
     <div class="wrap">
@@ -4382,6 +4415,89 @@ function chomneq_page_settings_page() {
                             <p class="description">
                                 Recomendado: imagem horizontal com pelo menos 1920x1080px para melhor qualidade.
                             </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" name="submit" id="submit" class="button button-primary button-hero" value="💾 Salvar Configurações">
+                </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2>🖼️ Logo da Hero</h2>
+                <p style="color: #666;">Escolha a logo que aparecerá no topo da página inicial.</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label>Logo:</label>
+                        </th>
+                        <td>
+                            <div style="margin-bottom: 15px;">
+                                <input type="hidden" id="hero_logo_image" name="hero_logo_image" value="<?php echo esc_attr($hero_logo_image_id); ?>" />
+                                
+                                <div id="hero_logo_preview" style="margin-bottom: 10px;">
+                                    <?php if ($hero_logo_image_url) : ?>
+                                        <img src="<?php echo esc_url($hero_logo_image_url); ?>" style="max-width: 300px; height: auto; border-radius: 8px; border: 2px solid #ddd;" />
+                                    <?php else : ?>
+                                        <div style="background: #f0f0f0; padding: 40px; text-align: center; border-radius: 8px; border: 2px dashed #ccc;">
+                                            <p style="color: #999; margin: 0;">Nenhuma logo selecionada</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <button type="button" class="button button-primary" id="upload_hero_logo_button">
+                                    📤 Selecionar Logo
+                                </button>
+                                <?php if ($hero_logo_image_url) : ?>
+                                    <button type="button" class="button" id="remove_hero_logo_button">
+                                        🗑️ Remover Logo
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                            <p class="description">
+                                Recomendado: imagem PNG com fundo transparente, 300x300px ou similar.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" name="submit" id="submit" class="button button-primary button-hero" value="💾 Salvar Configurações">
+                </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2>✏️ Textos da Hero</h2>
+                <p style="color: #666;">Personalize os textos que aparecem na seção hero da página inicial.</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="hero_title">Título Principal:</label>
+                        </th>
+                        <td>
+                            <input type="text" id="hero_title" name="hero_title" value="<?php echo esc_attr($hero_title); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "Bem-vindo ao Portal da Região 784"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="hero_subtitle">Subtítulo:</label>
+                        </th>
+                        <td>
+                            <input type="text" id="hero_subtitle" name="hero_subtitle" value="<?php echo esc_attr($hero_subtitle); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "Igreja do Evangelho Quadrangular no Rio de Janeiro"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="hero_description">Descrição:</label>
+                        </th>
+                        <td>
+                            <input type="text" id="hero_description" name="hero_description" value="<?php echo esc_attr($hero_description); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "Conheça nossas igrejas regionais, atividades e programação de eventos."</p>
                         </td>
                     </tr>
                 </table>
@@ -4436,8 +4552,160 @@ function chomneq_page_settings_page() {
             $('#hero_image_preview').html('<div style="background: #f0f0f0; padding: 40px; text-align: center; border-radius: 8px; border: 2px dashed #ccc;"><p style="color: #999; margin: 0;">Nenhuma imagem selecionada</p></div>');
             $(this).remove();
         });
+        
+        // Logo uploader
+        var logoUploader;
+        
+        $('#upload_hero_logo_button').on('click', function(e) {
+            e.preventDefault();
+            
+            if (logoUploader) {
+                logoUploader.open();
+                return;
+            }
+            
+            logoUploader = wp.media({
+                title: 'Escolher Logo',
+                button: {
+                    text: 'Usar esta logo'
+                },
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+            
+            logoUploader.on('select', function() {
+                var attachment = logoUploader.state().get('selection').first().toJSON();
+                $('#hero_logo_image').val(attachment.id);
+                $('#hero_logo_preview').html('<img src="' + attachment.url + '" style="max-width: 300px; height: auto; border-radius: 8px; border: 2px solid #ddd;" />');
+                
+                // Mostrar botão de remover
+                if ($('#remove_hero_logo_button').length === 0) {
+                    $('#upload_hero_logo_button').after('<button type="button" class="button" id="remove_hero_logo_button" style="margin-left: 10px;">🗑️ Remover Logo</button>');
+                }
+            });
+            
+            logoUploader.open();
+        });
+        
+        $(document).on('click', '#remove_hero_logo_button', function(e) {
+            e.preventDefault();
+            $('#hero_logo_image').val('');
+            $('#hero_logo_preview').html('<div style="background: #f0f0f0; padding: 40px; text-align: center; border-radius: 8px; border: 2px dashed #ccc;"><p style="color: #999; margin: 0;">Nenhuma logo selecionada</p></div>');
+            $(this).remove();
+        });
     });
     </script>
+    
+    <style>
+        .button-hero {
+            font-size: 16px !important;
+            padding: 12px 24px !important;
+            height: auto !important;
+        }
+    </style>
+    <?php
+}
+
+/**
+ * Renderizar página de configurações de Empreendedores Regionais
+ */
+function chomneq_empreendedores_settings_page() {
+    // Verificar permissões
+    if (!current_user_can('manage_options')) {
+        wp_die(__('Você não tem permissão para acessar esta página.'));
+    }
+    
+    // Salvar configurações
+    if (isset($_POST['chomneq_empreendedores_settings_nonce']) && wp_verify_nonce($_POST['chomneq_empreendedores_settings_nonce'], 'chomneq_save_empreendedores_settings')) {
+        
+        // Salvar título
+        if (isset($_POST['empreendedores_title'])) {
+            update_option('chomneq_empreendedores_title', sanitize_text_field($_POST['empreendedores_title']));
+        }
+        
+        // Salvar descrição
+        if (isset($_POST['empreendedores_description'])) {
+            update_option('chomneq_empreendedores_description', sanitize_text_field($_POST['empreendedores_description']));
+        }
+        
+        // Salvar texto do botão
+        if (isset($_POST['empreendedores_button_text'])) {
+            update_option('chomneq_empreendedores_button_text', sanitize_text_field($_POST['empreendedores_button_text']));
+        }
+        
+        // Salvar URL do botão
+        if (isset($_POST['empreendedores_button_url'])) {
+            update_option('chomneq_empreendedores_button_url', esc_url_raw($_POST['empreendedores_button_url']));
+        }
+        
+        echo '<div class="notice notice-success is-dismissible"><p>Configurações salvas com sucesso!</p></div>';
+    }
+    
+    // Buscar valores atuais
+    $empreendedores_title = get_option('chomneq_empreendedores_title', 'Bem-vindo à Feira de Empreendedorismo');
+    $empreendedores_description = get_option('chomneq_empreendedores_description', 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!');
+    $empreendedores_button_text = get_option('chomneq_empreendedores_button_text', '📝 Você é expositor? Cadastre-se aqui!');
+    $empreendedores_button_url = get_option('chomneq_empreendedores_button_url', home_url('/empreendedores-regionais/cadastro-expositor'));
+    
+    ?>
+    <div class="wrap">
+        <h1>⚙️ Configurações - Empreendedores Regionais</h1>
+        <p>Gerencie o conteúdo da página de Empreendedores Regionais.</p>
+        
+        <form method="post" action="">
+            <?php wp_nonce_field('chomneq_save_empreendedores_settings', 'chomneq_empreendedores_settings_nonce'); ?>
+            
+            <div style="background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2>📝 Textos da Hero Section</h2>
+                <p style="color: #666;">Personalize os textos que aparecem no topo da página de Empreendedores Regionais.</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_title">Título Principal (H1):</label>
+                        </th>
+                        <td>
+                            <input type="text" id="empreendedores_title" name="empreendedores_title" value="<?php echo esc_attr($empreendedores_title); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "Bem-vindo à Feira de Empreendedorismo"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_description">Descrição (Parágrafo):</label>
+                        </th>
+                        <td>
+                            <textarea id="empreendedores_description" name="empreendedores_description" rows="3" class="regular-text" style="width: 100%; max-width: 600px;"><?php echo esc_textarea($empreendedores_description); ?></textarea>
+                            <p class="description">Exemplo: "Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_button_text">Texto do Botão (Link):</label>
+                        </th>
+                        <td>
+                            <input type="text" id="empreendedores_button_text" name="empreendedores_button_text" value="<?php echo esc_attr($empreendedores_button_text); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "📝 Você é expositor? Cadastre-se aqui!"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_button_url">URL do Botão:</label>
+                        </th>
+                        <td>
+                            <input type="url" id="empreendedores_button_url" name="empreendedores_button_url" value="<?php echo esc_attr($empreendedores_button_url); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "/empreendedores-regionais/cadastro-expositor" ou "https://exemplo.com"</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" name="submit" id="submit" class="button button-primary button-hero" value="💾 Salvar Configurações">
+                </p>
+            </div>
+        </form>
+    </div>
     
     <style>
         .button-hero {

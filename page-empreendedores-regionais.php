@@ -6,18 +6,24 @@
  */
 
 get_header();
+
+// Buscar configurações do admin
+$empreendedores_title = get_option('chomneq_empreendedores_title', 'Bem-vindo à Feira de Empreendedorismo');
+$empreendedores_description = get_option('chomneq_empreendedores_description', 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!');
+$empreendedores_button_text = get_option('chomneq_empreendedores_button_text', '📝 Você é expositor? Cadastre-se aqui!');
+$empreendedores_button_url = get_option('chomneq_empreendedores_button_url', home_url('/empreendedores-regionais/cadastro-expositor'));
 ?>
 
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
         <div class="hero-content">
-            <h1>Bem-vindo à Feira de Empreendedorismo</h1>
-            <p>Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!</p>
+            <h1><?php echo esc_html($empreendedores_title); ?></h1>
+            <p><?php echo esc_html($empreendedores_description); ?></p>
             
             <div class="hero-cta">
-                <a href="<?php echo esc_url(home_url('/empreendedores-regionais/cadastro-expositor')); ?>" class="btn-cadastro-expositor">
-                    📝 Você é expositor? Cadastre-se aqui!
+                <a href="<?php echo esc_url($empreendedores_button_url); ?>" class="btn-cadastro-expositor">
+                    <?php echo esc_html($empreendedores_button_text); ?>
                 </a>
             </div>
         </div>
