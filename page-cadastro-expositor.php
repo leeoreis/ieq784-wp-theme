@@ -2,7 +2,7 @@
 /**
  * Template Name: Cadastro de Expositor
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 // Verificar se usuário está logado

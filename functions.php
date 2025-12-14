@@ -2,7 +2,7 @@
 /**
  * Chomneq Template Functions
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 // Evitar acesso direto
@@ -1369,11 +1369,11 @@ function chomneq_create_pages_and_routes() {
             'post_status' => 'publish',
             'post_type' => 'page',
             'post_name' => 'em-construcao',
-            'page_template' => 'page-em-construcao.php'
+            'page_template' => 'home.php'
         ));
         
         if ($home_page_id) {
-            update_post_meta($home_page_id, '_wp_page_template', 'page-em-construcao.php');
+            update_post_meta($home_page_id, '_wp_page_template', 'home.php');
             
             // Definir como página inicial
             update_option('page_on_front', $home_page_id);
@@ -1385,20 +1385,34 @@ function chomneq_create_pages_and_routes() {
         update_option('show_on_front', 'page');
     }
     
-    // Criar página "Chomneq 2025" se não existir (será a página de expositores)
-    $chomneq_page = get_page_by_path('chomneq2025');
-    if (!$chomneq_page) {
-        $chomneq_page_id = wp_insert_post(array(
-            'post_title' => 'Chomneq 2025',
+    // Criar/Atualizar página "Empreendedores Regionais" (antiga chomneq2025)
+    $empreendedores_page = get_page_by_path('empreendedores-regionais');
+    $old_page = get_page_by_path('chomneq2025');
+    
+    // Se a página antiga existir, atualizar o slug
+    if ($old_page && !$empreendedores_page) {
+        wp_update_post(array(
+            'ID' => $old_page->ID,
+            'post_name' => 'empreendedores-regionais',
+            'post_title' => 'Empreendedores Regionais'
+        ));
+        update_post_meta($old_page->ID, '_wp_page_template', 'page-empreendedores-regionais.php');
+        $empreendedores_page = get_post($old_page->ID);
+    }
+    
+    // Se não existir, criar nova
+    if (!$empreendedores_page) {
+        $empreendedores_page_id = wp_insert_post(array(
+            'post_title' => 'Empreendedores Regionais',
             'post_content' => '',
             'post_status' => 'publish',
             'post_type' => 'page',
-            'post_name' => 'chomneq2025',
-            'page_template' => 'page-chomneq2025.php'
+            'post_name' => 'empreendedores-regionais',
+            'page_template' => 'page-empreendedores-regionais.php'
         ));
         
-        if ($chomneq_page_id) {
-            update_post_meta($chomneq_page_id, '_wp_page_template', 'page-chomneq2025.php');
+        if ($empreendedores_page_id) {
+            update_post_meta($empreendedores_page_id, '_wp_page_template', 'page-empreendedores-regionais.php');
         }
     }
     
@@ -1411,9 +1425,9 @@ add_action('after_switch_theme', 'chomneq_create_pages_and_routes');
  * Adicionar rewrite rules customizadas
  */
 function chomneq_add_rewrite_rules() {
-    // Garantir que /chomneq2025 funcione
-    add_rewrite_rule('^chomneq2025/?$', 'index.php?pagename=chomneq2025', 'top');
-    add_rewrite_rule('^chomneq2025/(.+)/?$', 'index.php?pagename=chomneq2025/$matches[1]', 'top');
+    // Garantir que /empreendedores-regionais funcione
+    add_rewrite_rule('^empreendedores-regionais/?$', 'index.php?pagename=empreendedores-regionais', 'top');
+    add_rewrite_rule('^empreendedores-regionais/(.+)/?$', 'index.php?pagename=empreendedores-regionais/$matches[1]', 'top');
 }
 add_action('init', 'chomneq_add_rewrite_rules');
 

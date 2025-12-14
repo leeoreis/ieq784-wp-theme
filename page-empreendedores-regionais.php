@@ -1,8 +1,8 @@
 <?php
 /**
- * Template Name: Chomneq 2025
+ * Template Name: Empreendedores Regionais
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 get_header();
@@ -16,7 +16,7 @@ get_header();
             <p>Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!</p>
             
             <div class="hero-cta">
-                <a href="<?php echo esc_url(home_url('/chomneq2025/cadastro-expositor')); ?>" class="btn-cadastro-expositor">
+                <a href="<?php echo esc_url(home_url('/empreendedores-regionais/cadastro-expositor')); ?>" class="btn-cadastro-expositor">
                     📝 Você é expositor? Cadastre-se aqui!
                 </a>
             </div>
@@ -27,7 +27,7 @@ get_header();
 <!-- Filtros -->
 <section class="filters-section">
     <div class="container">
-        <form method="get" action="<?php echo esc_url(home_url('/chomneq2025')); ?>" class="filters-container">
+        <form method="get" action="<?php echo esc_url(home_url('/empreendedores-regionais')); ?>" class="filters-container">
             <div class="filter-group">
                 <label for="search">Buscar Expositor:</label>
                 <input type="text" id="search" name="busca" placeholder="Digite o nome..." value="<?php echo isset($_GET['busca']) ? esc_attr($_GET['busca']) : ''; ?>">
@@ -88,7 +88,7 @@ get_header();
                 <label>&nbsp;</label>
                 <div style="display: flex; gap: 0.5rem;">
                     <button type="submit" class="btn-filter">Filtrar</button>
-                    <a href="<?php echo esc_url(home_url('/chomneq2025')); ?>" class="btn-filter btn-reset">Limpar</a>
+                    <a href="<?php echo esc_url(home_url('/empreendedores-regionais')); ?>" class="btn-filter btn-reset">Limpar</a>
                 </div>
             </div>
         </form>

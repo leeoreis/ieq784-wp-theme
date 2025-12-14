@@ -2,7 +2,7 @@
 /**
  * Template Name: Em Construção
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 // Buscar igrejas regionais (exceto "Região 784")
@@ -941,7 +941,7 @@ $atividades = new WP_Query(array(
             </div>
             <hr style="margin: 3rem 0 0;" />
             <div style="text-align: center; padding: 2rem 0;">
-                <a href="/chomneq2025" class="btn-primary">🛍️ Ver os Expositores - Chomneq 2025</a>
+                <a href="/empreendedores-regionais" class="btn-primary">🛍️ Veja o catálogo de Empreendedores Regionais</a>
             </div>
         </div>
         
@@ -1024,7 +1024,7 @@ $atividades = new WP_Query(array(
                         <?php if ($pastor) : ?>
                         <div class="igreja-info-item">
                             <span class="icon">👤</span>
-                            <span><strong>Líder:</strong> <?php echo esc_html($pastor); ?></span>
+                            <span><strong>Titular:</strong> <?php echo esc_html($pastor); ?></span>
                         </div>
                         <?php endif; ?>
                         

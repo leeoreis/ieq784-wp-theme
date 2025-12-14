@@ -1,8 +1,8 @@
 <?php
 /**
- * Template para arquivo de taxonomia - Categoria de Expositor
+ * Template para taxonomia Categoria de Expositor
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 get_header();

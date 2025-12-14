@@ -10,7 +10,7 @@
 
 <header class="site-header">
     <div class="container">
-        <a href="<?php echo esc_url(home_url('/chomneq2025')); ?>" class="site-title">
+        <a href="<?php echo esc_url(home_url('/empreendedores-regionais')); ?>" class="site-title">
             <?php bloginfo('name'); ?>
         </a>
         

@@ -1,8 +1,8 @@
 <?php
 /**
- * Template para exibir post individual de Expositor
+ * Template para página individual de Expositor
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 get_header();
@@ -387,7 +387,7 @@ get_header();
                     
                     <!-- Botão de Voltar -->
                     <div style="margin-top: 2rem;">
-                        <a href="<?php echo esc_url(home_url('/chomneq2025')); ?>" class="btn-ver-mais" style="display: block; text-align: center;">← Voltar para Expositores</a>
+                        <a href="<?php echo esc_url(home_url('/empreendedores-regionais')); ?>" class="btn-ver-mais" style="display: block; text-align: center;">← Voltar para Expositores</a>
                     </div>
                     
                     

@@ -2,7 +2,7 @@
 /**
  * Template para arquivo de Custom Post Type - Expositor
  * 
- * @package Chomneq_Template
+ * @package Regiao_784_Theme
  */
 
 get_header();
