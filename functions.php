@@ -1369,11 +1369,11 @@ function chomneq_create_pages_and_routes() {
             'post_status' => 'publish',
             'post_type' => 'page',
             'post_name' => 'em-construcao',
-            'page_template' => 'home.php'
+            'page_template' => 'front-page.php'
         ));
         
         if ($home_page_id) {
-            update_post_meta($home_page_id, '_wp_page_template', 'home.php');
+            update_post_meta($home_page_id, '_wp_page_template', 'front-page.php');
             
             // Definir como página inicial
             update_option('page_on_front', $home_page_id);
