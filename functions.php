@@ -4736,7 +4736,7 @@ function chomneq_empreendedores_settings_page() {
     $empreendedores_secondary_cta_enabled = get_option('chomneq_empreendedores_secondary_cta_enabled', '0');
     
     $empreendedores_secondary_cta_text = get_option('chomneq_empreendedores_secondary_cta_text');
-    $empreendedores_secondary_cta_text = !empty($empreendedores_secondary_cta_text) ? $empreendedores_secondary_cta_text : '🛍️ Ver Catálogo de Produtos';
+    $empreendedores_secondary_cta_text = !empty($empreendedores_secondary_cta_text) ? $empreendedores_secondary_cta_text : 'Você é visitante? Confirme sua presença';
     
     $empreendedores_secondary_cta_url = get_option('chomneq_empreendedores_secondary_cta_url');
     $empreendedores_secondary_cta_url = !empty($empreendedores_secondary_cta_url) ? $empreendedores_secondary_cta_url : home_url('/empreendedores-regionais');
