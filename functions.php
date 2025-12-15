@@ -4285,6 +4285,40 @@ function chomneq_display_comment($comment, $depth = 0) {
  */
 
 /**
+ * Exibir aviso de erro de atualização no admin
+ */
+function chomneq_display_update_error_notice() {
+    $screen = get_current_screen();
+    
+    // Mostrar apenas na página de temas
+    if ($screen->id !== 'themes' && $screen->id !== 'update-core') {
+        return;
+    }
+    
+    $update_error = get_transient('chomneq_update_error');
+    
+    if ($update_error) {
+        ?>
+        <div class="notice notice-warning is-dismissible">
+            <p>
+                <strong>⚠️ Aviso do Sistema de Atualização do Tema:</strong><br>
+                Houve um problema ao verificar atualizações do tema no GitHub:<br>
+                <code><?php echo esc_html($update_error['message']); ?></code><br>
+                <small>Registrado em: <?php echo esc_html($update_error['time']); ?></small>
+            </p>
+            <p>
+                <em>O tema pode ter uma atualização disponível que não foi detectada. 
+                Tente novamente em alguns minutos ou visite 
+                <a href="https://github.com/leeoreis/ieq784-wp-theme/releases" target="_blank">GitHub Releases</a> 
+                para verificar manualmente.</em>
+            </p>
+        </div>
+        <?php
+    }
+}
+add_action('admin_notices', 'chomneq_display_update_error_notice');
+
+/**
  * Adicionar página de configurações no menu admin
  */
 function chomneq_add_page_settings_menu() {
@@ -4828,20 +4862,42 @@ function chomneq_check_theme_update($transient) {
     $api_url = "https://api.github.com/repos/{$github_uri}/releases/latest";
     
     $response = wp_remote_get($api_url, array(
-        'timeout' => 10,
+        'timeout' => 15,
         'headers' => array(
             'Accept' => 'application/vnd.github.v3+json',
             'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
         )
     ));
     
+    // Log de erro detalhado para debug
     if (is_wp_error($response)) {
+        error_log('Chomneq Theme Update Error: ' . $response->get_error_message());
+        
+        // Salvar erro em transient para exibir no admin
+        set_transient('chomneq_update_error', array(
+            'message' => $response->get_error_message(),
+            'time' => current_time('mysql')
+        ), 300); // 5 minutos
+        
+        return $transient;
+    }
+    
+    $response_code = wp_remote_retrieve_response_code($response);
+    if ($response_code !== 200) {
+        error_log('Chomneq Theme Update Error: GitHub API returned code ' . $response_code);
+        
+        set_transient('chomneq_update_error', array(
+            'message' => 'GitHub API retornou código ' . $response_code . '. Tente novamente em alguns minutos.',
+            'time' => current_time('mysql')
+        ), 300);
+        
         return $transient;
     }
     
     $release_data = json_decode(wp_remote_retrieve_body($response), true);
     
     if (empty($release_data['tag_name'])) {
+        error_log('Chomneq Theme Update Error: No tag_name found in GitHub response');
         return $transient;
     }
     
@@ -4859,6 +4915,14 @@ function chomneq_check_theme_update($transient) {
             'requires' => '6.0',
             'requires_php' => '7.4',
         );
+        
+        // Limpar erro anterior se houver
+        delete_transient('chomneq_update_error');
+    } else {
+        // Se não há atualização, garantir que não há info de update antiga
+        if (isset($transient->response[$theme_slug])) {
+            unset($transient->response[$theme_slug]);
+        }
     }
     
     return $transient;
@@ -4937,20 +5001,51 @@ function chomneq_theme_update_info($false, $action, $response) {
     $info->homepage = "https://github.com/{$github_uri}";
     $info->download_link = "https://github.com/{$github_uri}/archive/refs/tags/{$release_data['tag_name']}.zip";
     
-    // Formatar changelog
-    $changelog = isset($release_data['body']) && !empty($release_data['body']) 
-        ? nl2br(esc_html($release_data['body'])) 
-        : '<p>Confira as mudanças completas no <a href="https://github.com/' . esc_attr($github_uri) . '/releases/tag/' . esc_attr($release_data['tag_name']) . '" target="_blank">GitHub</a>.</p>';
+    // Formatar changelog com Markdown básico
+    $changelog_body = isset($release_data['body']) && !empty($release_data['body']) 
+        ? $release_data['body']
+        : '';
+    
+    // Converter Markdown básico para HTML (listas, negrito, links)
+    if (!empty($changelog_body)) {
+        // Escapar HTML primeiro
+        $changelog_body = esc_html($changelog_body);
+        
+        // Converter links [texto](url) para HTML
+        $changelog_body = preg_replace('/\[([^\]]+)\]\(([^\)]+)\)/', '<a href="$2" target="_blank" rel="noopener">$1</a>', $changelog_body);
+        
+        // Converter **negrito** para <strong>
+        $changelog_body = preg_replace('/\*\*([^\*]+)\*\*/', '<strong>$1</strong>', $changelog_body);
+        
+        // Converter títulos ##
+        $changelog_body = preg_replace('/^## (.+)$/m', '<h3>$1</h3>', $changelog_body);
+        $changelog_body = preg_replace('/^### (.+)$/m', '<h4>$1</h4>', $changelog_body);
+        
+        // Converter listas
+        $changelog_body = preg_replace('/^- (.+)$/m', '• $1', $changelog_body);
+        
+        // Quebras de linha
+        $changelog_body = nl2br($changelog_body);
+        
+        $changelog = '<div style="max-height: 600px; overflow-y: auto; padding: 15px; background: #f9f9f9; border-radius: 4px;">' . $changelog_body . '</div>';
+    } else {
+        $changelog = '<p>ℹ️ Não há descrição disponível para esta versão.</p>';
+    }
+    
+    // Link direto para GitHub (sem iframe que causa CSP block)
+    $github_link = '<p style="margin-top: 20px; padding: 15px; background: #0073aa; color: white; border-radius: 4px; text-align: center;">' .
+                   '<a href="https://github.com/' . esc_attr($github_uri) . '/releases/tag/' . esc_attr($release_data['tag_name']) . '" target="_blank" rel="noopener" style="color: white; text-decoration: none; font-weight: bold;">' .
+                   '📋 Ver Release Completa no GitHub →</a></p>';
     
     $info->sections = array(
         'description' => $theme->get('Description'),
-        'changelog' => $changelog,
+        'changelog' => $changelog . $github_link,
     );
     
     // Adicionar data de publicação se disponível
     if (isset($release_data['published_at'])) {
         $date = date_i18n(get_option('date_format'), strtotime($release_data['published_at']));
-        $info->sections['changelog'] = '<p><strong>📅 Publicado em:</strong> ' . $date . '</p>' . $info->sections['changelog'];
+        $info->sections['changelog'] = '<p style="background: #d7f1ff; padding: 10px; border-radius: 4px; margin-bottom: 15px;"><strong>📅 Publicado em:</strong> ' . $date . '</p>' . $info->sections['changelog'];
     }
     
     return $info;
@@ -5196,26 +5291,44 @@ function chomneq_ajax_force_update_check() {
     // Limpar todos os caches relacionados
     delete_site_transient('update_themes');
     delete_transient('chomneq_release_info_' . md5('leeoreis/ieq784-wp-theme'));
+    delete_transient('chomneq_update_error');
     
     // Forçar nova verificação
     wp_update_themes();
     
     // Verificar se há atualização disponível
     $update_themes = get_site_transient('update_themes');
-    $theme_slug = wp_get_theme()->get_stylesheet();
+    $theme = wp_get_theme();
+    $theme_slug = $theme->get_stylesheet();
+    $current_version = $theme->get('Version');
     
     $has_update = isset($update_themes->response[$theme_slug]);
+    
+    // Verificar se houve erro na última tentativa
+    $update_error = get_transient('chomneq_update_error');
+    
+    if ($update_error) {
+        wp_send_json_error(array(
+            'message' => '❌ Erro ao conectar com GitHub: ' . $update_error['message'],
+            'has_update' => false,
+            'current_version' => $current_version
+        ));
+        return;
+    }
     
     if ($has_update) {
         $new_version = $update_themes->response[$theme_slug]['new_version'];
         wp_send_json_success(array(
-            'message' => 'Atualização v' . $new_version . ' disponível!',
-            'has_update' => true
+            'message' => '✅ Nova versão v' . $new_version . ' disponível!',
+            'has_update' => true,
+            'current_version' => $current_version,
+            'new_version' => $new_version
         ));
     } else {
         wp_send_json_success(array(
-            'message' => 'Tema está atualizado',
-            'has_update' => false
+            'message' => '✅ Tema v' . $current_version . ' está atualizado',
+            'has_update' => false,
+            'current_version' => $current_version
         ));
     }
 }
