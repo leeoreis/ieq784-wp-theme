@@ -4341,6 +4341,16 @@ function chomneq_add_page_settings_menu() {
         'chomneq-empreendedores-settings',
         'chomneq_empreendedores_settings_page'
     );
+    
+    // Submenu para Contatos do Desenvolvedor
+    add_submenu_page(
+        'chomneq-page-settings',
+        'Contatos do Desenvolvedor',
+        'Contatos Dev',
+        'manage_options',
+        'chomneq-dev-contacts-settings',
+        'chomneq_dev_contacts_settings_page'
+    );
 }
 add_action('admin_menu', 'chomneq_add_page_settings_menu');
 
@@ -4835,6 +4845,159 @@ function chomneq_empreendedores_settings_page() {
                 </p>
             </div>
         </form>
+    </div>
+    
+    <style>
+        .button-hero {
+            font-size: 16px !important;
+            padding: 12px 24px !important;
+            height: auto !important;
+        }
+    </style>
+    <?php
+}
+
+/**
+ * Renderizar página de configurações de Contatos do Desenvolvedor
+ */
+function chomneq_dev_contacts_settings_page() {
+    // Verificar permissões
+    if (!current_user_can('manage_options')) {
+        wp_die('Você não tem permissão para acessar esta página.');
+    }
+    
+    // Salvar configurações
+    if (isset($_POST['chomneq_dev_contacts_nonce']) && wp_verify_nonce($_POST['chomneq_dev_contacts_nonce'], 'chomneq_save_dev_contacts')) {
+        // Email do desenvolvedor
+        if (isset($_POST['dev_contact_email'])) {
+            $email = sanitize_email($_POST['dev_contact_email']);
+            if (!empty($email)) {
+                update_option('chomneq_dev_contact_email', $email);
+            } else {
+                delete_option('chomneq_dev_contact_email');
+            }
+        }
+        
+        // WhatsApp do desenvolvedor
+        if (isset($_POST['dev_contact_whatsapp'])) {
+            $whatsapp = sanitize_text_field($_POST['dev_contact_whatsapp']);
+            if (!empty($whatsapp)) {
+                update_option('chomneq_dev_contact_whatsapp', $whatsapp);
+            } else {
+                delete_option('chomneq_dev_contact_whatsapp');
+            }
+        }
+        
+        // Nome do desenvolvedor
+        if (isset($_POST['dev_contact_name'])) {
+            $name = sanitize_text_field($_POST['dev_contact_name']);
+            if (!empty($name)) {
+                update_option('chomneq_dev_contact_name', $name);
+            } else {
+                delete_option('chomneq_dev_contact_name');
+            }
+        }
+        
+        echo '<div class="notice notice-success is-dismissible"><p><strong>✓ Configurações salvas com sucesso!</strong></p></div>';
+    }
+    
+    // Buscar configurações atuais
+    $dev_email = get_option('chomneq_dev_contact_email');
+    $dev_email = !empty($dev_email) ? $dev_email : 'leo.reis.santos@outlook.com';
+    
+    $dev_whatsapp = get_option('chomneq_dev_contact_whatsapp');
+    $dev_whatsapp = !empty($dev_whatsapp) ? $dev_whatsapp : '5521964035449';
+    
+    $dev_name = get_option('chomneq_dev_contact_name');
+    $dev_name = !empty($dev_name) ? $dev_name : 'Leonardo Reis';
+    
+    ?>
+    <div class="wrap">
+        <h1>⚙️ Contatos do Desenvolvedor</h1>
+        <p style="font-size: 14px; color: #666;">Configure os contatos de suporte técnico exibidos quando ocorrem erros no sistema.</p>
+        
+        <hr style="margin: 2rem 0; border: none; border-top: 2px solid #0073aa;" />
+        
+        <form method="post" action="">
+            <?php wp_nonce_field('chomneq_save_dev_contacts', 'chomneq_dev_contacts_nonce'); ?>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="dev_contact_name">Nome do Desenvolvedor:</label>
+                    </th>
+                    <td>
+                        <input type="text" id="dev_contact_name" name="dev_contact_name" value="<?php echo esc_attr($dev_name); ?>" class="regular-text" />
+                        <p class="description">Nome que aparecerá nas mensagens de erro (ex: "Leonardo Reis")</p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="dev_contact_email">E-mail de Contato:</label>
+                    </th>
+                    <td>
+                        <input type="email" id="dev_contact_email" name="dev_contact_email" value="<?php echo esc_attr($dev_email); ?>" class="regular-text" />
+                        <p class="description">E-mail para reportar bugs e erros do sistema</p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="dev_contact_whatsapp">WhatsApp de Contato:</label>
+                    </th>
+                    <td>
+                        <input type="text" id="dev_contact_whatsapp" name="dev_contact_whatsapp" value="<?php echo esc_attr($dev_whatsapp); ?>" class="regular-text" placeholder="5521999999999" />
+                        <p class="description">Número completo com DDI + DDD + número (ex: 5521964035449)</p>
+                        <p class="description"><strong>Formato:</strong> 55 (Brasil) + 21 (DDD) + 9 XXXX-XXXX (sem espaços ou caracteres especiais)</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+            
+            <h3>📱 Preview dos Botões de Erro</h3>
+            <p style="color: #666; margin-bottom: 1rem;">Veja como os botões aparecerão para o usuário em caso de erro:</p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; max-width: 600px;">
+                <p style="margin-bottom: 15px; color: #856404;"><strong>⚠️ Erro ao processar formulário</strong></p>
+                <p style="margin-bottom: 15px; color: #666;">Entre em contato com o desenvolvedor para reportar o problema:</p>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="mailto:<?php echo esc_attr($dev_email); ?>?subject=Erro no Sistema - Site IEQ 784&body=Olá, encontrei um erro no sistema..." 
+                       style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s;">
+                        📧 Enviar E-mail
+                    </a>
+                    
+                    <a href="https://wa.me/<?php echo esc_attr($dev_whatsapp); ?>?text=Olá%20<?php echo urlencode($dev_name); ?>,%20encontrei%20um%20erro%20no%20sistema%20do%20site%20IEQ%20784" 
+                       target="_blank"
+                       style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #25D366; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s;">
+                        💬 WhatsApp
+                    </a>
+                </div>
+            </div>
+            
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+            
+            <p class="submit">
+                <button type="submit" class="button button-primary button-hero">
+                    💾 Salvar Configurações de Contato
+                </button>
+            </p>
+        </form>
+        
+        <hr style="margin: 3rem 0; border: none; border-top: 2px solid #e0e0e0;" />
+        
+        <div style="background: #f0f0f1; padding: 20px; border-radius: 8px;">
+            <h3>ℹ️ Informações sobre esta configuração</h3>
+            <ul style="line-height: 1.8;">
+                <li>✅ Estes contatos aparecerão quando houver erros graves no sistema (ex: erro 409, timeout, falha de rede)</li>
+                <li>✅ Os botões são exibidos automaticamente nas páginas de cadastro e formulários críticos</li>
+                <li>✅ O usuário pode escolher entre enviar e-mail ou mensagem via WhatsApp</li>
+                <li>✅ O sistema envia informações técnicas do erro automaticamente (código, mensagem, timestamp)</li>
+                <li>⚠️ Mantenha estes contatos sempre atualizados para garantir suporte adequado aos usuários</li>
+            </ul>
+        </div>
     </div>
     
     <style>
