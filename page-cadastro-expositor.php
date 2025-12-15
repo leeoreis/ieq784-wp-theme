@@ -782,6 +782,13 @@ jQuery(document).ready(function($) {
                 pai: pai,
                 nonce: '<?php echo wp_create_nonce('criar_categoria'); ?>'
             },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>'
+            },
+            xhrFields: {
+                withCredentials: true
+            },
             success: function(response) {
                 if (response.success) {
                     // Adicionar nova categoria ao select
@@ -802,220 +809,24 @@ jQuery(document).ready(function($) {
                     alert('Erro: ' + response.data);
                 }
             },
-            error: function() {
-                alert('Erro ao criar categoria');
+            error: function(xhr) {
+                // Detectar bloqueio WAF
+                if (xhr.status === 409 && xhr.responseText && xhr.responseText.includes('document.cookie')) {
+                    alert('⚠️ Bloqueio de Segurança Detectado\n\n' +
+                          'O sistema de proteção do servidor bloqueou esta ação.\n' +
+                          'Por favor, tente uma das seguintes opções:\n\n' +
+                          '1. Recarregue a página (F5) e tente novamente\n' +
+                          '2. Use uma categoria existente\n' +
+                          '3. Entre em contato com o desenvolvedor para desbloquear');
+                } else {
+                    alert('Erro ao criar categoria');
+                }
             },
             complete: function() {
                 $btn.prop('disabled', false).text('Criar Categoria');
             }
         });
     });
-    
-    // Formulário principal com sistema de retry
-    var maxRetries = 2; // Número máximo de tentativas
-    var retryDelay = 2000; // Delay entre tentativas (2 segundos)
-    
-    function enviarFormulario(formData, attempt) {
-        attempt = attempt || 1;
-        
-        var $btn = $('.btn-submit');
-        var btnText = $btn.data('original-text') || $btn.text();
-        
-        if (!$btn.data('original-text')) {
-            $btn.data('original-text', btnText);
-        }
-        
-        if (attempt > 1) {
-            $btn.text('Tentando novamente (' + attempt + '/' + (maxRetries + 1) + ')...');
-        } else {
-            $btn.text('Enviando...');
-        }
-        
-        $btn.prop('disabled', true);
-        
-        $.ajax({
-            url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            timeout: 30000, // 30 segundos de timeout
-            success: function(response) {
-                console.log('Resposta AJAX:', response);
-                
-                if (response.success) {
-                    $('#mensagem-resultado')
-                        .removeClass('mensagem-erro')
-                        .addClass('mensagem-sucesso')
-                        .html('<strong>✓ Sucesso!</strong> ' + response.data.message)
-                        .slideDown();
-                    
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    var errorMsg = response.data || 'Erro desconhecido';
-                    $('#mensagem-resultado')
-                        .removeClass('mensagem-sucesso')
-                        .addClass('mensagem-erro')
-                        .html('<strong>✗ Erro!</strong> ' + errorMsg)
-                        .slideDown();
-                    
-                    $btn.prop('disabled', false).text(btnText);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Erro AJAX (tentativa ' + attempt + '):', {
-                    status: status,
-                    error: error,
-                    responseText: xhr.responseText,
-                    statusCode: xhr.status
-                });
-                
-                // Verificar se deve fazer retry
-                var shouldRetry = false;
-                
-                // Fazer retry apenas em casos específicos
-                if (xhr.status === 409 || xhr.status === 0 || status === 'timeout') {
-                    shouldRetry = true;
-                }
-                
-                // Se ainda tem tentativas e deve fazer retry
-                if (shouldRetry && attempt <= maxRetries) {
-                    console.log('Aguardando ' + (retryDelay / 1000) + 's para tentar novamente...');
-                    
-                    $('#mensagem-resultado')
-                        .removeClass('mensagem-sucesso')
-                        .addClass('mensagem-erro')
-                        .html('<strong>⚠️ Atenção!</strong> Problema temporário detectado. Tentando novamente em ' + (retryDelay / 1000) + ' segundos...')
-                        .slideDown();
-                    
-                    setTimeout(function() {
-                        enviarFormulario(formData, attempt + 1);
-                    }, retryDelay);
-                    
-                    return;
-                }
-                
-                // Se esgotou as tentativas ou não deve fazer retry, mostrar erro final
-                var errorMsg = 'Ocorreu um erro ao enviar o formulário.';
-                var showDeveloperContact = false;
-                var errorDetails = '';
-                
-                // Verificar se é erro 409 (WAF/Firewall bloqueando)
-                if (xhr.status === 409) {
-                    errorMsg = '<strong>🚫 Bloqueio de Segurança Detectado (Erro 409)</strong><br>' +
-                               'Seu formulário foi bloqueado pelo sistema de segurança do servidor após ' + attempt + ' tentativas.<br>' +
-                               'Isso geralmente acontece quando há proteções anti-spam ou firewall muito rigorosos.';
-                    showDeveloperContact = true;
-                    errorDetails = 'Status Code: 409 (Conflict) - WAF/Firewall Block';
-                }
-                // Erro de timeout
-                else if (status === 'timeout') {
-                    errorMsg = '<strong>⏱️ Tempo Esgotado</strong><br>' +
-                               'O servidor demorou muito para responder após ' + attempt + ' tentativas.<br>' +
-                               'Isso pode ser um problema temporário de conexão ou sobrecarga do servidor.';
-                    showDeveloperContact = true;
-                    errorDetails = 'Timeout Error';
-                }
-                // Erro de rede/conexão
-                else if (xhr.status === 0) {
-                    errorMsg = '<strong>🌐 Erro de Conexão</strong><br>' +
-                               'Não foi possível conectar ao servidor após ' + attempt + ' tentativas.<br>' +
-                               'Verifique sua conexão com a internet.';
-                    errorDetails = 'Network Error (Status 0)';
-                }
-                // Erro 500 (servidor)
-                else if (xhr.status >= 500) {
-                    errorMsg = '<strong>⚠️ Erro no Servidor (' + xhr.status + ')</strong><br>' +
-                               'O servidor encontrou um erro ao processar sua requisição.';
-                    showDeveloperContact = true;
-                    errorDetails = 'Server Error ' + xhr.status;
-                }
-                // Tentar parsear resposta JSON
-                else {
-                    try {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response && response.data) {
-                            errorMsg = response.data;
-                        }
-                    } catch(e) {
-                        console.error('Erro ao parsear resposta:', e);
-                        // Se não conseguir parsear, pode ser bloqueio do WAF
-                        if (xhr.responseText && xhr.responseText.includes('document.cookie')) {
-                            errorMsg = '<strong>🚫 Bloqueio de Segurança Detectado</strong><br>' +
-                                       'O sistema de proteção do servidor bloqueou sua requisição após ' + attempt + ' tentativas.<br>' +
-                                       'Este é um problema técnico que precisa ser resolvido pelo desenvolvedor.';
-                            showDeveloperContact = true;
-                            errorDetails = 'WAF Challenge/Block detected in response';
-                        }
-                    }
-                }
-                
-                // Montar mensagem de erro
-                var errorHtml = '<strong>✗ Erro!</strong> ' + errorMsg;
-                
-                // Adicionar botões de contato com desenvolvedor se necessário
-                if (showDeveloperContact) {
-                    <?php
-                    $dev_email = get_option('chomneq_dev_contact_email');
-                    $dev_email = !empty($dev_email) ? $dev_email : 'leo.reis.santos@outlook.com';
-                    
-                    $dev_whatsapp = get_option('chomneq_dev_contact_whatsapp');
-                    $dev_whatsapp = !empty($dev_whatsapp) ? $dev_whatsapp : '5521964035449';
-                    
-                    $dev_name = get_option('chomneq_dev_contact_name');
-                    $dev_name = !empty($dev_name) ? $dev_name : 'Leonardo Reis';
-                    ?>
-                    
-                    var timestamp = new Date().toLocaleString('pt-BR');
-                    var errorReport = errorDetails + ' | Tentativas: ' + attempt + ' | ' + timestamp + ' | URL: ' + window.location.href;
-                    
-                    errorHtml += '<hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(0,0,0,0.1);">';
-                    errorHtml += '<p style="margin: 10px 0; font-weight: 600;">📞 Reporte este erro para o desenvolvedor:</p>';
-                    errorHtml += '<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">';
-                    
-                    // Botão de E-mail
-                    var emailSubject = encodeURIComponent('Erro no Sistema - Cadastro de Expositor');
-                    var emailBody = encodeURIComponent(
-                        'Olá <?php echo esc_js($dev_name); ?>,\n\n' +
-                        'Encontrei um erro ao tentar cadastrar/editar meu expositor:\n\n' +
-                        'Detalhes do Erro:\n' +
-                        errorReport + '\n\n' +
-                        'Por favor, me ajude a resolver este problema.\n\n' +
-                        'Obrigado!'
-                    );
-                    
-                    errorHtml += '<a href="mailto:<?php echo esc_js($dev_email); ?>?subject=' + emailSubject + '&body=' + emailBody + '" ' +
-                                 'style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s;">' +
-                                 '📧 Enviar E-mail' +
-                                 '</a>';
-                    
-                    // Botão de WhatsApp
-                    var whatsappText = encodeURIComponent(
-                        'Olá <?php echo esc_js($dev_name); ?>, encontrei um erro no cadastro de expositor:\n\n' +
-                        errorReport
-                    );
-                    
-                    errorHtml += '<a href="https://wa.me/<?php echo esc_js($dev_whatsapp); ?>?text=' + whatsappText + '" ' +
-                                 'target="_blank" ' +
-                                 'style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #25D366; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s;">' +
-                                 '💬 WhatsApp' +
-                                 '</a>';
-                    
-                    errorHtml += '</div>';
-                }
-                
-                $('#mensagem-resultado')
-                    .removeClass('mensagem-sucesso')
-                    .addClass('mensagem-erro')
-                    .html(errorHtml)
-                    .slideDown();
-                
-                $btn.prop('disabled', false).text(btnText);
-            }
-        });
-    }
     
     // Formulário principal
     $('#form-cadastro-expositor').on('submit', function(e) {
@@ -1056,8 +867,192 @@ jQuery(document).ready(function($) {
             console.log(pair[0] + ': ' + (pair[1] instanceof File ? 'FILE: ' + pair[1].name : pair[1]));
         }
         
-        // Iniciar envio com retry automático
-        enviarFormulario(formData, 1);
+        var $btn = $('.btn-submit');
+        var btnText = $btn.text();
+        
+        $btn.prop('disabled', true).text('Enviando...');
+        
+        $.ajax({
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            timeout: 45000, // 45 segundos de timeout
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>'
+            },
+            xhrFields: {
+                withCredentials: true
+            },
+            success: function(response) {
+                console.log('Resposta AJAX:', response);
+                
+                if (response.success) {
+                    $('#mensagem-resultado')
+                        .removeClass('mensagem-erro')
+                        .addClass('mensagem-sucesso')
+                        .html('<strong>✓ Sucesso!</strong> ' + response.data.message)
+                        .slideDown();
+                    
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    var errorMsg = response.data || 'Erro desconhecido';
+                    $('#mensagem-resultado')
+                        .removeClass('mensagem-sucesso')
+                        .addClass('mensagem-erro')
+                        .html('<strong>✗ Erro!</strong> ' + errorMsg)
+                        .slideDown();
+                    
+                    $btn.prop('disabled', false).text(btnText);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erro AJAX:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
+                });
+                
+                var errorMsg = 'Ocorreu um erro ao enviar o formulário.';
+                var showDeveloperContact = false;
+                var errorDetails = '';
+                var showReloadTip = false;
+                
+                // Verificar se é erro 409 com cookie challenge (WAF/Firewall)
+                if (xhr.status === 409) {
+                    if (xhr.responseText && xhr.responseText.includes('document.cookie')) {
+                        errorMsg = '<strong>🚫 Bloqueio de Segurança Detectado (Erro 409)</strong><br><br>' +
+                                   '<strong>O que aconteceu?</strong><br>' +
+                                   'O sistema de proteção do servidor (WAF/Firewall) está bloqueando requisições AJAX nesta página.<br><br>' +
+                                   '<strong>Solução Imediata:</strong><br>' +
+                                   '1. <strong>Recarregue esta página</strong> (pressione F5)<br>' +
+                                   '2. Preencha o formulário novamente<br>' +
+                                   '3. Tente enviar novamente<br><br>' +
+                                   '<strong>Se o problema persistir:</strong> Entre em contato com o desenvolvedor usando os botões abaixo.';
+                        showReloadTip = true;
+                        showDeveloperContact = true;
+                        errorDetails = 'Status 409 - WAF Cookie Challenge (humans_21909)';
+                    } else {
+                        errorMsg = '<strong>🚫 Conflito no Servidor (Erro 409)</strong><br>' +
+                                   'O servidor rejeitou a requisição. Tente recarregar a página (F5) e enviar novamente.';
+                        showReloadTip = true;
+                        errorDetails = 'Status Code: 409 (Conflict)';
+                    }
+                }
+                // Erro de timeout
+                else if (status === 'timeout') {
+                    errorMsg = '<strong>⏱️ Tempo Esgotado</strong><br>' +
+                               'O servidor demorou mais de 45 segundos para responder.<br>' +
+                               'Isso pode indicar um arquivo muito grande ou problema de conexão.';
+                    showDeveloperContact = true;
+                    errorDetails = 'Timeout Error (45s)';
+                }
+                // Erro de rede/conexão
+                else if (xhr.status === 0) {
+                    errorMsg = '<strong>🌐 Erro de Conexão</strong><br>' +
+                               'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.';
+                    errorDetails = 'Network Error (Status 0)';
+                }
+                // Erro 500 (servidor)
+                else if (xhr.status >= 500) {
+                    errorMsg = '<strong>⚠️ Erro no Servidor (' + xhr.status + ')</strong><br>' +
+                               'O servidor encontrou um erro ao processar sua requisição.';
+                    showDeveloperContact = true;
+                    errorDetails = 'Server Error ' + xhr.status;
+                }
+                // Tentar parsear resposta JSON
+                else {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response && response.data) {
+                            errorMsg = response.data;
+                        }
+                    } catch(e) {
+                        console.error('Erro ao parsear resposta:', e);
+                    }
+                }
+                
+                // Montar mensagem de erro
+                var errorHtml = '<strong>✗ Erro!</strong> ' + errorMsg;
+                
+                // Adicionar botão de reload se for erro de WAF
+                if (showReloadTip) {
+                    errorHtml += '<hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(0,0,0,0.1);">';
+                    errorHtml += '<button onclick="window.location.reload()" ' +
+                                 'style="display: inline-flex; align-items: center; gap: 6px; padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; margin-bottom: 10px;">' +
+                                 '🔄 Recarregar Página e Tentar Novamente' +
+                                 '</button>';
+                }
+                
+                // Adicionar botões de contato com desenvolvedor se necessário
+                if (showDeveloperContact) {
+                    <?php
+                    $dev_email = get_option('chomneq_dev_contact_email');
+                    $dev_email = !empty($dev_email) ? $dev_email : 'leo.reis.santos@outlook.com';
+                    
+                    $dev_whatsapp = get_option('chomneq_dev_contact_whatsapp');
+                    $dev_whatsapp = !empty($dev_whatsapp) ? $dev_whatsapp : '5521964035449';
+                    
+                    $dev_name = get_option('chomneq_dev_contact_name');
+                    $dev_name = !empty($dev_name) ? $dev_name : 'Leonardo Reis';
+                    ?>
+                    
+                    var timestamp = new Date().toLocaleString('pt-BR');
+                    var errorReport = errorDetails + ' | ' + timestamp + ' | URL: ' + window.location.href;
+                    
+                    if (!showReloadTip) {
+                        errorHtml += '<hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(0,0,0,0.1);">';
+                    }
+                    errorHtml += '<p style="margin: 10px 0; font-weight: 600;">📞 Reporte este erro para o desenvolvedor:</p>';
+                    errorHtml += '<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">';
+                    
+                    // Botão de E-mail
+                    var emailSubject = encodeURIComponent('Erro 409 - Bloqueio WAF no Cadastro de Expositor');
+                    var emailBody = encodeURIComponent(
+                        'Olá <?php echo esc_js($dev_name); ?>,\n\n' +
+                        'Encontrei um erro ao tentar cadastrar/editar meu expositor:\n\n' +
+                        'Detalhes do Erro:\n' +
+                        errorReport + '\n\n' +
+                        'O sistema está bloqueando minhas requisições AJAX com cookie challenge.\n\n' +
+                        'Por favor, verifique as configurações do WAF/Firewall para permitir requisições ao admin-ajax.php.\n\n' +
+                        'Obrigado!'
+                    );
+                    
+                    errorHtml += '<a href="mailto:<?php echo esc_js($dev_email); ?>?subject=' + emailSubject + '&body=' + emailBody + '" ' +
+                                 'style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s;">' +
+                                 '📧 Enviar E-mail' +
+                                 '</a>';
+                    
+                    // Botão de WhatsApp
+                    var whatsappText = encodeURIComponent(
+                        'Olá <?php echo esc_js($dev_name); ?>, encontrei um erro no cadastro de expositor:\n\n' +
+                        errorReport + '\n\n' +
+                        'O WAF está bloqueando requisições AJAX com cookie challenge.'
+                    );
+                    
+                    errorHtml += '<a href="https://wa.me/<?php echo esc_js($dev_whatsapp); ?>?text=' + whatsappText + '" ' +
+                                 'target="_blank" ' +
+                                 'style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #25D366; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s;">' +
+                                 '💬 WhatsApp' +
+                                 '</a>';
+                    
+                    errorHtml += '</div>';
+                }
+                
+                $('#mensagem-resultado')
+                    .removeClass('mensagem-sucesso')
+                    .addClass('mensagem-erro')
+                    .html(errorHtml)
+                    .slideDown();
+                
+                $btn.prop('disabled', false).text(btnText);
+            }
+        });
     });
     
     <?php if ($is_edit && $status == 'publish'): ?>
