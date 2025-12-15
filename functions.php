@@ -4656,33 +4656,65 @@ function chomneq_empreendedores_settings_page() {
         
         // Salvar título
         if (isset($_POST['empreendedores_title'])) {
-            update_option('chomneq_empreendedores_title', sanitize_text_field($_POST['empreendedores_title']));
+            $title = sanitize_text_field($_POST['empreendedores_title']);
+            if (!empty($title)) {
+                update_option('chomneq_empreendedores_title', $title);
+            } else {
+                delete_option('chomneq_empreendedores_title');
+            }
         }
         
         // Salvar descrição
         if (isset($_POST['empreendedores_description'])) {
-            update_option('chomneq_empreendedores_description', sanitize_text_field($_POST['empreendedores_description']));
+            $description = sanitize_text_field($_POST['empreendedores_description']);
+            if (!empty($description)) {
+                update_option('chomneq_empreendedores_description', $description);
+            } else {
+                delete_option('chomneq_empreendedores_description');
+            }
         }
         
-        // Salvar texto do botão
+        // Salvar texto do botão primário
         if (isset($_POST['empreendedores_button_text'])) {
-            update_option('chomneq_empreendedores_button_text', sanitize_text_field($_POST['empreendedores_button_text']));
+            $button_text = sanitize_text_field($_POST['empreendedores_button_text']);
+            if (!empty($button_text)) {
+                update_option('chomneq_empreendedores_button_text', $button_text);
+            } else {
+                delete_option('chomneq_empreendedores_button_text');
+            }
         }
         
-        // Salvar URL do botão
+        // Salvar URL do botão primário
         if (isset($_POST['empreendedores_button_url'])) {
-            update_option('chomneq_empreendedores_button_url', esc_url_raw($_POST['empreendedores_button_url']));
+            $button_url = esc_url_raw($_POST['empreendedores_button_url']);
+            if (!empty($button_url)) {
+                update_option('chomneq_empreendedores_button_url', $button_url);
+            } else {
+                delete_option('chomneq_empreendedores_button_url');
+            }
         }
         
-        // Salvar botão secundário
+        // Salvar checkbox do botão secundário
         update_option('chomneq_empreendedores_secondary_cta_enabled', isset($_POST['empreendedores_secondary_cta_enabled']) ? '1' : '0');
         
+        // Salvar texto do botão secundário
         if (isset($_POST['empreendedores_secondary_cta_text'])) {
-            update_option('chomneq_empreendedores_secondary_cta_text', sanitize_text_field($_POST['empreendedores_secondary_cta_text']));
+            $secondary_text = sanitize_text_field($_POST['empreendedores_secondary_cta_text']);
+            if (!empty($secondary_text)) {
+                update_option('chomneq_empreendedores_secondary_cta_text', $secondary_text);
+            } else {
+                delete_option('chomneq_empreendedores_secondary_cta_text');
+            }
         }
         
+        // Salvar URL do botão secundário
         if (isset($_POST['empreendedores_secondary_cta_url'])) {
-            update_option('chomneq_empreendedores_secondary_cta_url', esc_url_raw($_POST['empreendedores_secondary_cta_url']));
+            $secondary_url = esc_url_raw($_POST['empreendedores_secondary_cta_url']);
+            if (!empty($secondary_url)) {
+                update_option('chomneq_empreendedores_secondary_cta_url', $secondary_url);
+            } else {
+                delete_option('chomneq_empreendedores_secondary_cta_url');
+            }
         }
         
         echo '<div class="notice notice-success is-dismissible"><p>Configurações salvas com sucesso!</p></div>';
