@@ -4688,15 +4688,26 @@ function chomneq_empreendedores_settings_page() {
         echo '<div class="notice notice-success is-dismissible"><p>Configurações salvas com sucesso!</p></div>';
     }
     
-    // Buscar valores atuais
-    $empreendedores_title = get_option('chomneq_empreendedores_title', 'Bem-vindo à Feira de Empreendedorismo');
-    $empreendedores_description = get_option('chomneq_empreendedores_description', 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!');
-    $empreendedores_button_text = get_option('chomneq_empreendedores_button_text', '📝 Você é expositor? Cadastre-se aqui!');
-    $empreendedores_button_url = get_option('chomneq_empreendedores_button_url', home_url('/empreendedores-regionais/cadastro-expositor'));
+    // Buscar valores atuais com validação !empty() para fallback correto
+    $empreendedores_title = get_option('chomneq_empreendedores_title');
+    $empreendedores_title = !empty($empreendedores_title) ? $empreendedores_title : 'Bem-vindo à Feira de Empreendedorismo';
+    
+    $empreendedores_description = get_option('chomneq_empreendedores_description');
+    $empreendedores_description = !empty($empreendedores_description) ? $empreendedores_description : 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!';
+    
+    $empreendedores_button_text = get_option('chomneq_empreendedores_button_text');
+    $empreendedores_button_text = !empty($empreendedores_button_text) ? $empreendedores_button_text : '📝 Você é expositor? Cadastre-se aqui!';
+    
+    $empreendedores_button_url = get_option('chomneq_empreendedores_button_url');
+    $empreendedores_button_url = !empty($empreendedores_button_url) ? $empreendedores_button_url : home_url('/empreendedores-regionais/cadastro-expositor');
     
     $empreendedores_secondary_cta_enabled = get_option('chomneq_empreendedores_secondary_cta_enabled', '0');
-    $empreendedores_secondary_cta_text = get_option('chomneq_empreendedores_secondary_cta_text', '🛍️ Ver Catálogo de Produtos');
-    $empreendedores_secondary_cta_url = get_option('chomneq_empreendedores_secondary_cta_url', home_url('/empreendedores-regionais'));
+    
+    $empreendedores_secondary_cta_text = get_option('chomneq_empreendedores_secondary_cta_text');
+    $empreendedores_secondary_cta_text = !empty($empreendedores_secondary_cta_text) ? $empreendedores_secondary_cta_text : '🛍️ Ver Catálogo de Produtos';
+    
+    $empreendedores_secondary_cta_url = get_option('chomneq_empreendedores_secondary_cta_url');
+    $empreendedores_secondary_cta_url = !empty($empreendedores_secondary_cta_url) ? $empreendedores_secondary_cta_url : home_url('/empreendedores-regionais');
     
     ?>
     <div class="wrap">
