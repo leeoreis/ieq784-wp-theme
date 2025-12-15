@@ -701,7 +701,116 @@ if ($is_edit) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
+// Detectar se está em modo anônimo/privado
+function detectarModoAnonimo(callback) {
+    var isPrivate = false;
+    
+    // Teste 1: LocalStorage (mais confiável)
+    try {
+        localStorage.setItem('test', '1');
+        localStorage.removeItem('test');
+    } catch(e) {
+        isPrivate = true;
+        callback(true);
+        return;
+    }
+    
+    // Teste 2: IndexedDB
+    if ('indexedDB' in window) {
+        try {
+            var db = indexedDB.open('test');
+            db.onsuccess = function() {
+                callback(false);
+            };
+            db.onerror = function() {
+                callback(true);
+            };
+        } catch(e) {
+            callback(true);
+        }
+    } else {
+        // Teste 3: Verificação de APIs restritas
+        if (window.webkitRequestFileSystem) {
+            window.webkitRequestFileSystem(
+                window.TEMPORARY, 1,
+                function() { callback(false); },
+                function() { callback(true); }
+            );
+        } else if (window.indexedDB) {
+            callback(false);
+        } else {
+            callback(false);
+        }
+    }
+}
+
+// Mostrar aviso de modo anônimo
+function mostrarAvisoModoAnonimo() {
+    var avisoHtml = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+            <div style="background: white; border-radius: 12px; max-width: 600px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+                <h2 style="color: #d32f2f; margin-bottom: 20px; font-size: 28px;">Modo Anônimo/Privado Detectado</h2>
+                
+                <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+                    <strong>Esta página não funciona em modo anônimo/privado do navegador.</strong>
+                </p>
+                
+                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: left;">
+                    <p style="margin: 0 0 15px 0; color: #856404; font-weight: 600;">⚠️ Por que isso acontece?</p>
+                    <ul style="color: #856404; margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li>O sistema de segurança do servidor bloqueia requisições AJAX em modo anônimo</li>
+                        <li>Cookies de sessão não são mantidos entre requisições</li>
+                        <li>Upload de arquivos pode falhar sem avisos</li>
+                        <li>Categorias e formulários não podem ser salvos</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: left;">
+                    <p style="margin: 0 0 15px 0; color: #2e7d32; font-weight: 600;">✅ Solução:</p>
+                    <ol style="color: #2e7d32; margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li><strong>Abra uma aba normal</strong> (não anônima/privada)</li>
+                        <li><strong>Acesse novamente:</strong> <code style="background: white; padding: 2px 8px; border-radius: 4px;"><?php echo home_url('/cadastro-expositor'); ?></code></li>
+                        <li><strong>Faça login normalmente</strong></li>
+                        <li><strong>Cadastre seu expositor</strong></li>
+                    </ol>
+                </div>
+                
+                <button onclick="window.close()" style="background: #d32f2f; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-right: 10px; transition: all 0.3s;">
+                    ❌ Fechar Esta Aba
+                </button>
+                
+                <a href="<?php echo home_url(); ?>" style="display: inline-block; background: #0073aa; color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; transition: all 0.3s;">
+                    🏠 Ir para Página Inicial
+                </a>
+                
+                <p style="margin-top: 25px; font-size: 13px; color: #999;">
+                    Se você não está em modo anônimo e vê esta mensagem, entre em contato com o desenvolvedor.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(avisoHtml);
+    
+    // Bloquear scroll
+    $('body').css('overflow', 'hidden');
+    
+    // Desabilitar todos os formulários
+    $('form').css('pointer-events', 'none').css('opacity', '0.3');
+}
+
 jQuery(document).ready(function($) {
+    // Detectar modo anônimo ao carregar a página
+    detectarModoAnonimo(function(isAnonimo) {
+        if (isAnonimo) {
+            console.warn('Modo anônimo detectado - bloqueando acesso');
+            mostrarAvisoModoAnonimo();
+        } else {
+            console.log('Modo normal detectado - página funcionando normalmente');
+        }
+    });
+    
     // Validar tamanho da imagem ao selecionar
     $('#imagem_destaque').on('change', function() {
         var file = this.files[0];
