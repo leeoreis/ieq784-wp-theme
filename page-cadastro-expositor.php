@@ -1058,7 +1058,6 @@ jQuery(document).ready(function($) {
         
         // Iniciar envio com retry automático
         enviarFormulario(formData, 1);
-        });
     });
     
     <?php if ($is_edit && $status == 'publish'): ?>
