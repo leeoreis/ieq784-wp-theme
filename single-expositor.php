@@ -108,7 +108,8 @@ get_header();
                                     <div class="gallery-item" 
                                          data-full="<?php echo esc_url($img_full); ?>"
                                          data-caption="<?php echo esc_attr($img_caption); ?>"
-                                         data-description="<?php echo esc_attr($img_description); ?>">
+                                         data-description="<?php echo esc_attr($img_description); ?>"
+                                         style="cursor: pointer;">
                                         <img src="<?php echo esc_url($img_url); ?>" 
                                              alt="<?php echo esc_attr($img_alt ?: 'Produto'); ?>" 
                                              loading="lazy">
@@ -538,6 +539,151 @@ jQuery(document).ready(function($) {
             }
         });
     });
+});
+</script>
+
+<!-- Lightbox Modal -->
+<div id="lightbox-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; overflow: auto;">
+    <button id="close-lightbox" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: white; font-size: 40px; cursor: pointer; z-index: 10000; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">&times;</button>
+    <button id="prev-image" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; font-size: 40px; cursor: pointer; z-index: 10000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">‹</button>
+    <button id="next-image" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; font-size: 40px; cursor: pointer; z-index: 10000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">›</button>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; padding: 80px 80px 40px;">
+        <img id="lightbox-image" src="" alt="" style="max-width: 100%; max-height: 85vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 50px rgba(0,0,0,0.5);">
+        <div id="lightbox-caption" style="color: white; text-align: center; margin-top: 20px; font-size: 18px; max-width: 800px;"></div>
+    </div>
+</div>
+
+<style>
+#close-lightbox:hover {
+    transform: scale(1.1);
+}
+
+#prev-image:hover,
+#next-image:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 768px) {
+    #lightbox-modal > div {
+        padding: 60px 20px 20px !important;
+    }
+    
+    #prev-image,
+    #next-image {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 30px !important;
+    }
+    
+    #prev-image {
+        left: 10px !important;
+    }
+    
+    #next-image {
+        right: 10px !important;
+    }
+    
+    #close-lightbox {
+        top: 10px !important;
+        right: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 35px !important;
+    }
+    
+    #lightbox-image {
+        max-height: 70vh !important;
+    }
+    
+    #lightbox-caption {
+        font-size: 14px !important;
+        padding: 0 10px;
+    }
+}
+</style>
+
+<script>
+jQuery(document).ready(function($) {
+    var galleryItems = $('.gallery-item');
+    var currentIndex = 0;
+    
+    // Abrir lightbox ao clicar na imagem
+    $('.gallery-item').on('click', function() {
+        currentIndex = galleryItems.index(this);
+        openLightbox(currentIndex);
+    });
+    
+    // Fechar lightbox
+    $('#close-lightbox').on('click', function() {
+        $('#lightbox-modal').fadeOut(300);
+        $('body').css('overflow', 'auto');
+    });
+    
+    // Fechar ao clicar fora da imagem
+    $('#lightbox-modal').on('click', function(e) {
+        if (e.target === this) {
+            $(this).fadeOut(300);
+            $('body').css('overflow', 'auto');
+        }
+    });
+    
+    // Navegação - Anterior
+    $('#prev-image').on('click', function() {
+        currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+        showImage(currentIndex);
+    });
+    
+    // Navegação - Próxima
+    $('#next-image').on('click', function() {
+        currentIndex = (currentIndex + 1) % galleryItems.length;
+        showImage(currentIndex);
+    });
+    
+    // Navegação por teclado
+    $(document).on('keydown', function(e) {
+        if ($('#lightbox-modal').is(':visible')) {
+            if (e.key === 'Escape') {
+                $('#lightbox-modal').fadeOut(300);
+                $('body').css('overflow', 'auto');
+            } else if (e.key === 'ArrowLeft') {
+                $('#prev-image').click();
+            } else if (e.key === 'ArrowRight') {
+                $('#next-image').click();
+            }
+        }
+    });
+    
+    function openLightbox(index) {
+        showImage(index);
+        $('#lightbox-modal').fadeIn(300);
+        $('body').css('overflow', 'hidden');
+    }
+    
+    function showImage(index) {
+        var item = galleryItems.eq(index);
+        var fullUrl = item.data('full');
+        var caption = item.data('caption');
+        var description = item.data('description');
+        
+        $('#lightbox-image').attr('src', fullUrl);
+        
+        var captionText = '';
+        if (caption) {
+            captionText = caption;
+        }
+        if (description && description !== caption) {
+            captionText += (captionText ? ' - ' : '') + description;
+        }
+        
+        $('#lightbox-caption').text(captionText);
+        
+        // Mostrar/esconder botões de navegação se houver apenas 1 imagem
+        if (galleryItems.length <= 1) {
+            $('#prev-image, #next-image').hide();
+        } else {
+            $('#prev-image, #next-image').show();
+        }
+    }
 });
 </script>
 

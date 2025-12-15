@@ -4640,6 +4640,17 @@ function chomneq_empreendedores_settings_page() {
             update_option('chomneq_empreendedores_button_url', esc_url_raw($_POST['empreendedores_button_url']));
         }
         
+        // Salvar botão secundário
+        update_option('chomneq_empreendedores_secondary_cta_enabled', isset($_POST['empreendedores_secondary_cta_enabled']) ? '1' : '0');
+        
+        if (isset($_POST['empreendedores_secondary_cta_text'])) {
+            update_option('chomneq_empreendedores_secondary_cta_text', sanitize_text_field($_POST['empreendedores_secondary_cta_text']));
+        }
+        
+        if (isset($_POST['empreendedores_secondary_cta_url'])) {
+            update_option('chomneq_empreendedores_secondary_cta_url', esc_url_raw($_POST['empreendedores_secondary_cta_url']));
+        }
+        
         echo '<div class="notice notice-success is-dismissible"><p>Configurações salvas com sucesso!</p></div>';
     }
     
@@ -4648,6 +4659,10 @@ function chomneq_empreendedores_settings_page() {
     $empreendedores_description = get_option('chomneq_empreendedores_description', 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!');
     $empreendedores_button_text = get_option('chomneq_empreendedores_button_text', '📝 Você é expositor? Cadastre-se aqui!');
     $empreendedores_button_url = get_option('chomneq_empreendedores_button_url', home_url('/empreendedores-regionais/cadastro-expositor'));
+    
+    $empreendedores_secondary_cta_enabled = get_option('chomneq_empreendedores_secondary_cta_enabled', '0');
+    $empreendedores_secondary_cta_text = get_option('chomneq_empreendedores_secondary_cta_text', '🛍️ Ver Catálogo de Produtos');
+    $empreendedores_secondary_cta_url = get_option('chomneq_empreendedores_secondary_cta_url', home_url('/empreendedores-regionais'));
     
     ?>
     <div class="wrap">
@@ -4696,6 +4711,44 @@ function chomneq_empreendedores_settings_page() {
                         <td>
                             <input type="url" id="empreendedores_button_url" name="empreendedores_button_url" value="<?php echo esc_attr($empreendedores_button_url); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
                             <p class="description">Exemplo: "/empreendedores-regionais/cadastro-expositor" ou "https://exemplo.com"</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+                
+                <h3 style="margin-top: 2rem;">🔗 Botão Secundário (CTA Adicional)</h3>
+                <p style="color: #666; margin-bottom: 1.5rem;">Configure um segundo botão de call-to-action que aparecerá ao lado do botão principal.</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_secondary_cta_enabled">Exibir Botão Secundário:</label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" id="empreendedores_secondary_cta_enabled" name="empreendedores_secondary_cta_enabled" value="1" <?php checked($empreendedores_secondary_cta_enabled, '1'); ?> />
+                                Ativar botão secundário
+                            </label>
+                            <p class="description">Marque para exibir um segundo botão na hero section</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_secondary_cta_text">Texto do Botão Secundário:</label>
+                        </th>
+                        <td>
+                            <input type="text" id="empreendedores_secondary_cta_text" name="empreendedores_secondary_cta_text" value="<?php echo esc_attr($empreendedores_secondary_cta_text); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "🛍️ Ver Catálogo de Produtos"</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="empreendedores_secondary_cta_url">URL do Botão Secundário:</label>
+                        </th>
+                        <td>
+                            <input type="url" id="empreendedores_secondary_cta_url" name="empreendedores_secondary_cta_url" value="<?php echo esc_attr($empreendedores_secondary_cta_url); ?>" class="regular-text" style="width: 100%; max-width: 600px;" />
+                            <p class="description">Exemplo: "/empreendedores-regionais" ou "https://exemplo.com/catalogo"</p>
                         </td>
                     </tr>
                 </table>

@@ -12,6 +12,10 @@ $empreendedores_title = get_option('chomneq_empreendedores_title', 'Bem-vindo à
 $empreendedores_description = get_option('chomneq_empreendedores_description', 'Descubra expositores incríveis, conecte-se com empreendedores e explore produtos e serviços únicos!');
 $empreendedores_button_text = get_option('chomneq_empreendedores_button_text', '📝 Você é expositor? Cadastre-se aqui!');
 $empreendedores_button_url = get_option('chomneq_empreendedores_button_url', home_url('/empreendedores-regionais/cadastro-expositor'));
+
+$empreendedores_secondary_cta_enabled = get_option('chomneq_empreendedores_secondary_cta_enabled', '0');
+$empreendedores_secondary_cta_text = get_option('chomneq_empreendedores_secondary_cta_text', '🛍️ Ver Catálogo de Produtos');
+$empreendedores_secondary_cta_url = get_option('chomneq_empreendedores_secondary_cta_url', home_url('/empreendedores-regionais'));
 ?>
 
 <!-- Hero Section -->
@@ -25,6 +29,11 @@ $empreendedores_button_url = get_option('chomneq_empreendedores_button_url', hom
                 <a href="<?php echo esc_url($empreendedores_button_url); ?>" class="btn-cadastro-expositor">
                     <?php echo esc_html($empreendedores_button_text); ?>
                 </a>
+                <?php if ($empreendedores_secondary_cta_enabled === '1') : ?>
+                    <a href="<?php echo esc_url($empreendedores_secondary_cta_url); ?>" class="btn-cadastro-expositor">
+                        <?php echo esc_html($empreendedores_secondary_cta_text); ?>
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
