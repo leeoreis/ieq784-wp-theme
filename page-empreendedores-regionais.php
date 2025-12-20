@@ -206,10 +206,11 @@ $empreendedores_secondary_cta_url = !empty($empreendedores_secondary_cta_url) ? 
             <?php if ($expositores_query->max_num_pages > 1) : ?>
                 <div class="pagination">
                     <?php
-                    // Corrigir paginação para funcionar em páginas customizadas
+                    // Corrigir base da paginação para sempre usar a URL da página de catálogo
                     $current_paged = $paged;
+                    $base = trailingslashit(get_pagenum_link(1)) . 'page/%#%/';
                     echo paginate_links(array(
-                        'base' => get_permalink() . 'page/%#%/',
+                        'base' => $base,
                         'format' => 'page/%#%/',
                         'total' => $expositores_query->max_num_pages,
                         'current' => $current_paged,
