@@ -47,18 +47,15 @@ get_header();
                     <?php endif; ?>
                     
                     <!-- Sistema de Curtidas -->
-                    <button class="btn-like <?php echo $has_liked ? 'liked' : ''; ?>" 
-                            data-expositor-id="<?php echo $expositor_id; ?>"
-                            data-liked="<?php echo $has_liked ? '1' : '0'; ?>"
-                            title="<?php echo $has_liked ? 'Você já curtiu' : 'Curtir este expositor'; ?>"
-                            style="margin: 0;">
-                        <span class="heart-icon"><?php echo $has_liked ? '❤️' : '🤍'; ?></span>
-                        <span class="likes-count"><?php echo $likes_count; ?></span>
-                    </button>
-                </div>
-                
-                
-            </header>
+                <button class="btn-like <?php echo $has_liked ? 'liked' : ''; ?>" 
+                        data-expositor-id="<?php echo $expositor_id; ?>"
+                        data-liked="<?php echo $has_liked ? '1' : '0'; ?>"
+                        title="<?php echo $has_liked ? 'Você já curtiu' : 'Curtir este expositor'; ?>"
+                        style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #fff; border: 2px solid #eee; border-radius: 25px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <span class="heart-icon" style="font-size: 1.5rem; line-height: 1;"><?php echo $has_liked ? '❤️' : '🤍'; ?></span>
+                    <span class="likes-count" style="font-weight: 600; color: #e74c3c; font-size: 1.1rem;"><?php echo $likes_count; ?></span>
+                </button>
+            </div>
             
             <!-- Imagem Destacada -->
             <?php if (has_post_thumbnail()) : ?>
