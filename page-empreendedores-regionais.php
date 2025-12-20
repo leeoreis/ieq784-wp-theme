@@ -118,13 +118,23 @@ $empreendedores_secondary_cta_url = !empty($empreendedores_secondary_cta_url) ? 
         <div class="grid-header">
             <h2>Nossos Expositores</h2>
             <?php
-            // Preparar query
+            // Corrigir paginação para funcionar em páginas customizadas
+            $paged = 1;
+            if (get_query_var('paged')) {
+                $paged = get_query_var('paged');
+            } elseif (get_query_var('page')) {
+                $paged = get_query_var('page');
+            } elseif (isset($_GET['paged'])) {
+                $paged = intval($_GET['paged']);
+            }
+
             $args = array(
                 'post_type' => 'expositor',
                 'posts_per_page' => 12,
                 'orderby' => 'title',
                 'order' => 'ASC',
                 'post_status' => 'publish',
+                'paged' => $paged,
             );
             
             // Adicionar filtro de busca expandida (título + conteúdo + meta fields)
@@ -196,9 +206,13 @@ $empreendedores_secondary_cta_url = !empty($empreendedores_secondary_cta_url) ? 
             <?php if ($expositores_query->max_num_pages > 1) : ?>
                 <div class="pagination">
                     <?php
+                    // Corrigir paginação para funcionar em páginas customizadas
+                    $current_paged = $paged;
                     echo paginate_links(array(
+                        'base' => get_permalink() . 'page/%#%/',
+                        'format' => 'page/%#%/',
                         'total' => $expositores_query->max_num_pages,
-                        'current' => max(1, get_query_var('paged')),
+                        'current' => $current_paged,
                         'prev_text' => '« Anterior',
                         'next_text' => 'Próximo »',
                     ));
