@@ -1427,6 +1427,9 @@ add_action('after_switch_theme', 'chomneq_create_pages_and_routes');
 function chomneq_add_rewrite_rules() {
     // Garantir que /empreendedores-regionais funcione
     add_rewrite_rule('^empreendedores-regionais/?$', 'index.php?pagename=empreendedores-regionais', 'top');
+    // Permitir paginação: /empreendedores-regionais/page/2/
+    add_rewrite_rule('^empreendedores-regionais/page/([0-9]+)/?$', 'index.php?pagename=empreendedores-regionais&paged=$matches[1]', 'top');
+    // (Opcional) manter suporte a subpáginas customizadas
     add_rewrite_rule('^empreendedores-regionais/(.+)/?$', 'index.php?pagename=empreendedores-regionais/$matches[1]', 'top');
 }
 add_action('init', 'chomneq_add_rewrite_rules');
