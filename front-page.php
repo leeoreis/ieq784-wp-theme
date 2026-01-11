@@ -5,7 +5,7 @@
  * @package Regiao_784_Theme
  */
 
-// Buscar igrejas regionais (exceto "Região 784")
+// Buscar igrejas regionais (exceto "Região 784" e "IEQ Estadual")
 $igrejas = new WP_Query(array(
     'post_type' => 'igreja_regional',
     'posts_per_page' => -1,
@@ -13,12 +13,20 @@ $igrejas = new WP_Query(array(
     'orderby' => 'meta_value_num',
     'meta_key' => '_igreja_ordem',
     'order' => 'ASC',
-    'post__not_in' => get_posts(array(
-        'post_type' => 'igreja_regional',
-        'title' => 'Região 784',
-        'posts_per_page' => 1,
-        'fields' => 'ids'
-    ))
+    'post__not_in' => array_merge(
+        get_posts(array(
+            'post_type' => 'igreja_regional',
+            'title' => 'Região 784',
+            'posts_per_page' => 1,
+            'fields' => 'ids'
+        )),
+        get_posts(array(
+            'post_type' => 'igreja_regional',
+            'title' => 'IEQ Estadual',
+            'posts_per_page' => 1,
+            'fields' => 'ids'
+        ))
+    )
 ));
 
 // Buscar atividades fixas (sempre exibidas, sem filtro de data)
