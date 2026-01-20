@@ -947,7 +947,13 @@ $atividades = new WP_Query(array(
                         </div>
                         <?php endif; ?>
                         
-                        <?php if ($link) : ?>
+                        <?php 
+                        $pagina_evento = get_post_meta(get_the_ID(), '_atividade_pagina_evento', true);
+                        if ($pagina_evento === '1') : ?>
+                            <a href="<?php echo esc_url(get_permalink(get_the_ID())); ?>" class="atividade-link">
+                                Saiba mais →
+                            </a>
+                        <?php elseif ($link) : ?>
                             <a href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer" class="atividade-link">
                                 <?php echo esc_html($texto_botao); ?> →
                             </a>

@@ -1747,6 +1747,7 @@ function chomneq_atividade_info_callback($post) {
     $ativa = get_post_meta($post->ID, '_atividade_ativa', true);
     $fixa = get_post_meta($post->ID, '_atividade_fixa', true);
     $regional_id = get_post_meta($post->ID, '_atividade_regional', true);
+    $pagina_evento = get_post_meta($post->ID, '_atividade_pagina_evento', true);
     
     // Contar caracteres do conteúdo
     $content = get_post_field('post_content', $post->ID);
@@ -1855,6 +1856,16 @@ function chomneq_atividade_info_callback($post) {
                     Exibir sempre no topo (atividade permanente)
                 </label>
                 <p class="description">Atividades fixas não precisam de data e aparecem sempre em primeiro lugar na listagem</p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="atividade_pagina_evento">Página dedicada para o evento:</label></th>
+            <td>
+                <label>
+                    <input type="checkbox" id="atividade_pagina_evento" name="atividade_pagina_evento" value="1" <?php checked($pagina_evento, '1'); ?>>
+                    Criar página específica para este evento
+                </label>
+                <p class="description">Se marcado, será criada uma página em /eventos/titulo-do-evento</p>
             </td>
         </tr>
     </table>
@@ -2039,10 +2050,14 @@ function chomneq_save_atividade_meta($post_id) {
     // Salvar campo ativa (checkbox)
     $ativa = isset($_POST['atividade_ativa']) ? '1' : '0';
     update_post_meta($post_id, '_atividade_ativa', $ativa);
-    
+
     // Salvar campo fixa (checkbox)
     $fixa = isset($_POST['atividade_fixa']) ? '1' : '0';
     update_post_meta($post_id, '_atividade_fixa', $fixa);
+
+    // Salvar campo página de evento (checkbox)
+    $pagina_evento = isset($_POST['atividade_pagina_evento']) ? '1' : '0';
+    update_post_meta($post_id, '_atividade_pagina_evento', $pagina_evento);
     
     // Salvar campo regional
     if (isset($_POST['atividade_regional'])) {
