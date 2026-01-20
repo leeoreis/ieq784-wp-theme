@@ -169,12 +169,8 @@ function chomneq_formatar_data($data) {
         ?>
     </ul>
     <?php
-    // Exibe CTA apenas se houver link OU se a página dedicada estiver ativa
-    if ($pagina_evento === '1') {
-        // CTA padrão para página dedicada
-        echo '<a href="' . esc_url(get_permalink($post->ID)) . '" class="atividade-btn">Saiba mais</a>';
-    } elseif ($link) {
-        // CTA customizado
+    // Sempre usar o CTA customizado definido pelo usuário
+    if ($link) {
         echo '<a href="' . esc_url($link) . '" class="atividade-btn" target="_blank" rel="noopener noreferrer">' . esc_html($cta) . '</a>';
     }
     ?>
