@@ -2,15 +2,17 @@
 <?php
 // Página completa do evento/atividade
 global $post;
+
 $pagina_evento = get_post_meta($post->ID, '_atividade_pagina_evento', true);
-if ($pagina_evento !== '1') {
-    global $wp_query;
-    $wp_query->set_404();
-    status_header(404);
-    nocache_headers();
-    include get_404_template();
+$data_fim = get_post_meta($post->ID, '_atividade_data_fim', true);
+$hoje = date('Y-m-d');
+
+// Se não deve ter página OU se a atividade já passou, redireciona para a home
+if ($pagina_evento !== '1' || ($data_fim && $data_fim < $hoje)) {
+    wp_redirect(home_url());
     exit;
 }
+
 get_header();
 
 $imagem = get_the_post_thumbnail_url($post->ID, 'full');
